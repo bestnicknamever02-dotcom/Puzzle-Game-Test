@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>Moonfall</title>
+<style>
+:root{color-scheme:dark;--bg:#0d0b14;--panel:#1a1626;--line:#3a3350;--tx:#ece8f6;--mut:#a59fbd;--acc:#8f86ff;--ok:#5cc28a;--bad:#e2574c;
+--C:#8f86ff;--E:#ff7a45;--H:#ff6fa3;--S:#2fc29a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:var(--tx);background:#2a2440;border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#120f1f;font-weight:600}
+button:disabled{opacity:.45;cursor:default}
+input{font:inherit;color:var(--tx);background:#120f1c;border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.scr{display:none;min-height:100%;padding:24px 16px}
+.scr.on{display:block}
+.card{max-width:520px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+h1{font-size:30px;margin:0 0 4px;letter-spacing:.5px}
+h2{font-size:18px;margin:18px 0 8px}
+.mut{color:var(--mut)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:10px}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.role{border:2px solid var(--line);border-radius:12px;padding:10px;text-align:left;background:#15111f}
+.role b{display:block;font-size:16px}
+.role small{color:var(--mut);display:block;line-height:1.3;margin-top:2px}
+.role.mine{border-color:var(--acc);background:#211b36}
+.code{font:700 34px/1 ui-monospace,monospace;letter-spacing:6px;color:var(--acc)}
+#game{position:fixed;inset:0;display:none}
+#game.on{display:block}
+#views{position:absolute;inset:0}
+#views.quad{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:#000}
+#views canvas{width:100%;height:100%;display:block;touch-action:none}
+#topbar{position:absolute;top:6px;left:6px;right:6px;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;z-index:5;pointer-events:none;scrollbar-width:none}
+#topbar::-webkit-scrollbar{display:none}
+#topbar.client{justify-content:center;left:auto;right:50%;transform:translateX(50%)}
+#topbar button{flex:0 0 auto}
+#topbar button{pointer-events:auto;padding:6px 10px;font-size:13px;border-radius:8px;background:rgba(26,22,38,.85)}
+#lvsel button.sel,#topbar button.sel{background:var(--acc);color:#120f1f;border-color:var(--acc)}
+#toasts{position:absolute;left:50%;transform:translateX(-50%);top:96px;width:min(560px,92%);z-index:6;pointer-events:none;display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{background:rgba(26,22,38,.94);border:1px solid var(--line);border-left:4px solid var(--acc);padding:8px 12px;border-radius:8px;font-size:14px;max-width:100%}
+#chat{position:absolute;left:8px;bottom:8px;width:min(340px,60%);z-index:6;display:flex;flex-direction:column;gap:4px}
+#chatlog{display:flex;flex-direction:column;gap:3px;max-height:30vh;overflow:hidden;justify-content:flex-end}
+#chatlog div{background:rgba(13,11,20,.8);padding:4px 8px;border-radius:6px;font-size:13px}
+#chatin{display:none;gap:6px}
+#chatin.on{display:flex}
+#chatin input{padding:6px 10px;font-size:14px}
+#ctrls{position:absolute;inset:auto 0 0 0;height:190px;z-index:4;pointer-events:none;display:none}
+#ctrls.on{display:block}
+#stick{position:absolute;left:18px;bottom:18px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.15);pointer-events:auto;touch-action:none}
+#nub{position:absolute;left:45px;top:45px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.25)}
+#actb{position:absolute;right:22px;bottom:34px;width:96px;height:96px;border-radius:50%;pointer-events:auto;font-weight:700;font-size:18px;background:rgba(143,134,255,.35);border:2px solid var(--acc);touch-action:none}
+#chatb{position:absolute;right:130px;bottom:50px;pointer-events:auto;padding:8px 12px;border-radius:20px;font-size:13px;background:rgba(26,22,38,.85)}
+#prsb{position:absolute;right:130px;bottom:150px;pointer-events:auto;padding:10px 16px;border-radius:20px;font-size:14px;font-weight:700;background:rgba(143,134,255,.35);border:2px solid var(--acc);touch-action:none;display:none}
+#micb{position:absolute;right:130px;bottom:100px;pointer-events:auto;padding:8px 12px;border-radius:20px;font-size:13px;background:rgba(26,22,38,.85)}
+#ov{position:fixed;inset:0;background:rgba(5,4,10,.82);z-index:20;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+#ov .card{margin:auto}
+#ov.on{display:flex}
+#netb{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bad);color:#fff;text-align:center;padding:5px;font:600 13px system-ui;display:none}
+@media (max-width:560px){#chat{width:62%}}
+</style>
+</head>
+<body>
+<div id="netb"></div>
+
+<!-- HOME -->
+<div id="home" class="scr on"><div class="card col">
+ <h1>Moonfall</h1>
+ <div class="mut">Four crash survivors, one alien moon, and very limited ways to talk to each other.</div>
+ <button class="pri" id="bHost">Host a game (you watch)</button>
+ <button id="bJoinShow">Join a game</button>
+ <button id="bRejoin" style="display:none"></button>
+ <button id="bResume" style="display:none"></button>
+ <button id="bPractice">Practice offline (control all four yourself)</button>
+ <div class="row" id="lvsel" style="align-items:center"><span class="mut">Level</span><button data-l="1" class="sel">Level 1: Come Together</button><button data-l="2">Level 2: Waterways</button><button data-l="3">Level 3: Nexus</button></div>
+ <div class="mut" style="font-size:13px">Voice chat works best with headphones. Players hear anyone in the same room.</div>
+</div></div>
+
+<!-- JOIN -->
+<div id="join" class="scr"><div class="card col">
+ <h1>Join a game</h1>
+ <label>Your name<input id="jName" maxlength="14" autocomplete="off" placeholder="Name"></label>
+ <label>Game code<input id="jCode" maxlength="6" autocomplete="off" placeholder="ABCDE" style="text-transform:uppercase"></label>
+ <button class="pri" id="bJoin">Join</button>
+ <button id="bJoinBack">Back</button>
+ <div id="jMsg" class="mut"></div>
+</div></div>
+
+<!-- LOBBY (both host and player) -->
+<div id="lobby" class="scr"><div class="card col">
+ <h1 id="lTitle">Lobby</h1>
+ <div id="lHostBox" class="col" style="display:none">
+  <div class="mut">Game code</div><div class="code" id="lCode">-----</div>
+  <div class="row"><button id="bCopy">Copy join link</button></div>
+  <div class="mut" style="font-size:13px" id="lLink"></div>
+ </div>
+ <h2>Roles</h2>
+ <div class="roles" id="lRoles"></div>
+ <div id="lMic" class="mut" style="font-size:13px"></div>
+ <div id="lVoice" class="row" style="display:none;align-items:center"><button id="lMicBtn">Mic is on</button><span class="mut" style="font-size:13px">Voice chat is open in the lobby: everyone hears everyone until the game starts.</span></div>
+ <div id="lFace" class="col" style="display:none;align-items:center;user-select:none;-webkit-user-select:none">
+  <h2 style="margin:8px 0 0">Draw your face</h2>
+  <div class="mut" style="font-size:13px;text-align:center">This is you. Draw a face with the marker and it stays on your character in the game.</div>
+  <canvas id="faceCv" width="260" height="260" style="width:260px;height:260px;touch-action:none;border-radius:50%;cursor:crosshair"></canvas>
+  <div class="row" id="faceCols" style="justify-content:center;gap:8px"></div>
+  <div class="row" style="justify-content:center"><button id="fMark" class="sel">Marker</button><button id="fErase">Eraser</button><button id="fSmall">Thin</button><button id="fBig">Thick</button><button id="fClear">Clear</button></div>
+ </div>
+ <button class="pri" id="bStart" style="display:none">Start game</button>
+ <div id="lMsg" class="mut"></div>
+</div></div>
+
+<!-- GAME -->
+<div id="game">
+ <div id="views"></div>
+ <div id="topbar"></div>
+ <div id="toasts"></div>
+ <div id="chat"><div id="chatlog"></div><div id="chatin"><input id="chatTxt" maxlength="120" placeholder="Say something (same rules as voice)"><button id="chatSend">Send</button></div></div>
+ <div id="ctrls"><div id="stick"><div id="nub"></div></div><button id="actb">GRAB</button><button id="prsb">PRESS</button><button id="chatb">Chat</button><button id="micb">Mic is on</button></div>
+</div>
+<div id="ov"></div>
+
+<script>
+'use strict';
+/* ============================== MAP ============================== */
+const R=6,A=10,RR=A*2/Math.sqrt(3);
+const DIRS=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];           // E NE NW W SW SE
+const DNAME=['east','north-east','north-west','west','south-west','south-east'];
+const ANG=[0,-60,-120,180,120,60].map(a=>a*Math.PI/180);
+const NX=ANG.map(Math.cos),NY=ANG.map(Math.sin);
+const K=(q,r)=>q+','+r, P=k=>k.split(',').map(Number);
+const inMap=(q,r)=>Math.abs(q)<=R&&Math.abs(r)<=R&&Math.abs(q+r)<=R;
+const CELLS=[];for(let q=-R;q<=R;q++)for(let r=-R;r<=R;r++)if(inMap(q,r))CELLS.push(K(q,r));
+const nb=(k,d)=>{const[q,r]=P(k),n=[q+DIRS[d][0],r+DIRS[d][1]];return inMap(n[0],n[1])?K(n[0],n[1]):null};
+const SHIP={'-1,0':1,'0,0':2,'1,0':3};
+const ISLORD=['2,-3','3,-4','4,-5','5,-6'];   // the island: 4 rooms in a row, south-west end first (it lies on one straight line from the left ship section)
+const ISLAND='3,-4',ISL=new Set(ISLORD);
+const LAKE=new Set(CELLS.filter(k=>{const[q,r]=P(k);return !ISL.has(k)&&((r<=-2&&q>=2&&q<5)||(q===1&&r<=-2))}));
+ISL.forEach(c=>DIRS.forEach(([a,b])=>{const[q,r]=P(c);if(inMap(q+a,r+b)&&!ISL.has(K(q+a,r+b)))LAKE.add(K(q+a,r+b))}));   // a permanent ring of water on every side of the island (it never drains)
+const COLORS=[{n:'red',c:'#ff6b6b'},{n:'blue',c:'#5aa9ff'},{n:'green',c:'#5cd68a'},{n:'yellow',c:'#ffd84d'}];   // east gate: the third clue
+const LETTERS=['A','B','C','D'];
+const SHAPES=['triangle','square','circle','star'];   // the 4 island buttons, one per island room
+const GATE='2,0',KEYP='1,5',PANEL='6,0',DOCK='4,0',BANK='-2,1';   // PANEL: the Engineer's room at the far east end, cut off by lava on the tile to its left (PLAVA). DOCK: the Heavy's start tile, with the lava socket — a charged battery sitting there cools the lava
+// Gate-code stage: the Commander hears one role per ship section — Swimmer on the island from the LEFT tile (section 1), Engineer at the device from the MIDDLE tile (section 2), Heavy at the keypad from the RIGHT tile (section 3).
+// Battery-array stage: from the LEFT ship tile (section 1) the Commander hears all three at once: PANEL/Engineer (east line), array/Heavy (west line, out on the west bank), island/Swimmer (north-east line).
+const RIVER=new Set(['3,-1','1,1','0,2','-1,3','-1,4','-2,3']);   // 3,-1 now belongs to the east gate: it drains with the river
+const POND=new Set(['1,2','0,3']);
+const L1G='0,4',L1P='1,4';   // stone gate west of the keypad's plate: while someone stands on the plate (L1P) the gate opens so the Heavy can reach the cracked rock beside it
+const LGATE='0,-2',LCHAN=new Set(['-1,-1','-2,-1','-3,-1','-4,-1','-5,-1']);
+const DEVICE='0,-5',PUZZLE='-5,0',HATCH='6,-4',OLDHATCH='5,-4',POD='6,-5',PORT='-1,1',ROCK='0,1';
+const CRK1='1,-1',PL2='-2,0',PL3=ROCK;   // ship door: opens between the centre tile and CRK1. Plate 1 hides under the cracked mountain on CRK1, plate 2 is left of the ship, plate 3 (Heavy) is south of it. All three must be held to open the door.
+const CHAN=new Set(['-2,5','-3,5']),POOL='-4,5',GRL='-5,5',CRYSTAL='-5,6',SGATE='-5,4',SOCK='-5,3';
+const FCRY='-3,3';   // the final crystal room, a dead-end pocket off the approach to the grotto
+const MOUNT1=new Set(['2,4','0,5','0,6','-3,2','-2,2','4,2','-3,-2','-1,2','-4,3']);
+[POOL,GRL,CRYSTAL,...CHAN].forEach(c=>{for(let d=0;d<6;d++){const n=nb(c,d);if(n&&![POOL,GRL,CRYSTAL].includes(n)&&!CHAN.has(n)&&!RIVER.has(n)&&n!==SGATE)MOUNT1.add(n)}});
+['-6,2','-6,3','-1,-2','-1,-5','6,-6','5,-5'].forEach(k=>MOUNT1.add(k));   // 6,-6 and 5,-5 wall in the Navigator's start tile; only the cracked hatch at 6,-4 opens it (5,-4 is lava, so the Commander's line still reaches him)
+   // the whole left side is mountains; the Engineer starts in a small maze in the top-left corner. Straight shots stay open along the array row, the device column and the island and keypad lines
+['0,-6','1,-6','2,-6','3,-6','1,-5','2,-5','-2,-4','-1,-4','1,-4','-3,-3','-2,-3','-1,-3','6,-3','-4,-2','-2,-2','5,-2','6,-2','5,-1','6,-1','-6,0','-6,1','4,1','5,1','3,2','3,3','-1,5','-1,6'].forEach(k=>MOUNT1.add(k));   // more mountains so nobody wanders into dead ends
+const CRK1S=['6,-4','-2,3','-1,4','1,4'];   // cracked mountains the Heavy smashes: 6,-4 frees the Diver's pod, -2,3 and -1,4 reveal water of the east gate river, 2,3 reveals the way to the keypad
+LAKE.delete('4,-2');   // a corridor of ground up the east side, from the Heavy to the pod hatch
+const ELAVA='0,-4',HLAVA='1,4',HLAVA2='1,3',PLAVA='5,0';   // lava that shuts the Engineer (south-east of the device) and the Heavy (north-west of the keypad) in while the east gate puzzle runs, and the lava in front of the Engineer's panel
+const ESPAWN='-6,4';   // the Engineer now starts next to the grotto gate socket
+const POIS1=[ISLAND,DEVICE,KEYP,PUZZLE,PANEL,SOCK,DOCK,PORT,FCRY];   // shown unlabeled to anyone in the ship while it has power: only the puzzle terminals (island buttons, device, keypad, array, panel) and the places that take a charge (grotto socket, door socket, ship socket, final crystal)
+const SLOTS={1:[-7.5,-3.5],2:[-2.5,-3.5],3:[2.5,-3.5],4:[7.5,-3.5],5:[-7.5,4],6:[-2.5,4],7:[2.5,4],8:[7.5,4]};
+const CPL=[[-5,-4],[5,-4],[-5,4],[5,4]];   // four pressure plates around the crystal
+const HOLD={fc:[FCRY,0,0],sock:[SOCK,0,0],d0:[DEVICE,-4,2.5],d1:[DEVICE,4,2.5]};
+const HNAME={fc:'the crystal',sock:'the grotto gate socket',d0:'the device (left socket)',d1:'the device (right socket)',b0:'the battery',b1:'the battery'};
+const ROLES=['C','E','H','S'];
+const RN={C:'Commander',E:'Engineer',H:'Heavy',S:'Navigator'};
+const RC={C:'#8f86ff',E:'#ff7a45',H:'#ff6fa3',S:'#2fc29a'};
+const RC0=Object.assign({},RC);const PAL=['#8f86ff','#ff7a45','#ff6fa3','#2fc29a','#ffd23f','#4cc9f0','#b5e48c','#f4f1ea'];
+/* ----- Level 2: The Drains (part 1) ----- */
+// Four crew, split into four pockets by lava and water. Three drains turn patches of shallow water into dry riverbed, but only one drain can run at a time. Only the Diver can cross the water, so he carries the news between the others.
+const L2={h:'0,-5',e:'5,0',c:'-5,5',s:'0,0',d1:'-6,6',d2:'0,-6',d3:'6,0',bat:'0,1',crack:'-2,0',dp:'-2,0',lav:'-3,0',tm:'-5,5',scr:'-5,0',ant:'5,-5',d4:'0,4',p4:'4,0',rd:'-4,6'};
+const L2LAVA=new Set(['-3,0']),L2DEEP=new Set(['0,0','3,-3']),L2CRACK=new Set(['-2,0','0,2','2,-2']);
+const L2GRP={'-2,0':[3],'-3,3': [2, 3], '-2,2': [2, 3], '-1,0': [3], '-1,1': [2, 3], '0,-3': [1, 3, 4], '0,-2': [1, 3, 4], '0,-1': [1, 3, 4], '0,1': [2, 4], '0,2': [2, 4], '2,-2': [1], '1,-1': [1], '1,0': [1, 2], '2,0': [1, 2], '3,0': [1, 2]};   // each shallow tile and the drains that can dry it
+const MOUNT2=new Set(['-3,6','-4,-1','-5,-1','-6,0','-6,1','-5,1','1,4','1,3','-1,4','-1,5','0,5','-1,-1', '-1,-2', '-1,2', '-2,1', '-2,3', '-3,-1', '-3,-2', '-3,-3', '-3,2', '-4,1', '-5,2', '-6,3', '1,-2', '1,-3', '1,1', '2,-1', '2,1', '3,-1', '-1,3', '-2,-1', '-2,-2', '-2,-3', '-2,-4', '-2,4', '-3,1', '-3,5', '-4,2', '-5,3', '-6,4', '1,2', '2,-3', '2,-4', '2,-5', '2,-6', '2,2', '3,-2', '3,2', '4,-2', '4,2', '5,-2', '6,-2', '5,-4', '5,-5', '4,-5', '3,-4', '4,-3']);
+const POIS2=['-5,5','5,0','-6,6','6,0','0,4','0,3','5,-5','-4,6','-5,0','0,-5','4,-4'];   // radar room (-4,6): with a CHARGED BATTERY in its slot, anyone there sees these unlabeled on their explored map: every place a charge or battery can go (drains 1, 3 and 4, plate terminal, key terminal, antenna, final crystal, the radar slot) and every puzzle terminal and screen (plate terminal, key terminal, plate screen, the two key screens)
+let MOUNT=MOUNT1,POIS=POIS1,LVL=1;
+const pings3=(s,room)=>{if(s.lv!==3)return[];if(room===TERM3.e&&pzOn3(s))return[TERM3.e,TERM3.s,TERM3.h];if(room==='0,0'&&p2On(s))return[T2.c,T2.s,T2.e,T2.h];return[]};   // standing where the charge woke a puzzle shows its terminals on your minimap
+const pings12=(s,room)=>{if(s.lv!==2&&s.lv!==3)return(s.da&&!s.sv&&room===DEVICE)?[DEVICE,ISLAND,KEYP,PANEL]:[];   // level one: the device wakes the island buttons, keypad and panel
+ if(s.lv===2){if(s.tc&&!s.pz.done&&room===L2.tm)return[L2.tm,L2.scr].concat(PL7);   // level two: the charged terminal wakes the screen and the seven plates
+  if(s.ks&&s.ks.on&&!s.ks.done&&room===KR)return[KR,KTL,KTR]}   // and the charged battery in the key terminal wakes the two screens
+ return[]};
+const poisFor=(s,room)=>radarOn(s,room)?POIS:pings3(s,room).concat(pings12(s,room));
+function setLevel(l){l=l===3?3:l===2?2:1;if(l===LVL)return;LVL=l;MOUNT=l===2?MOUNT2:MOUNT1;POIS=l===2?POIS2:POIS1}
+const RDESC={C:'The Leader that must COMMUNICATE with the team, TALKING over each other, without getting overwhelmed.',E:'ENERGY is LIMITED, someone has to decide when, where, and why to use it.',H:'LIFTING needs to be done, and why not SMASH some while you\'re at it.',S:'Adventurous and daring, itching to EXPLORE every square inch through WATER or land.'};
+
+/* ============================== RULES (shared) ============================== */
+function terr(k,s){if(!k)return'void';if(s&&s.lv===3)return terr3(k,s);if(s&&s.lv===2)return terr2(k,s);
+ if(MOUNT.has(k))return'mount';if(s&&((s.da&&!s.sv&&(k===ELAVA||k===HLAVA||k===HLAVA2))||(k===PLAVA&&!pdoorOf(s))))return'lava';if(k===CRK1&&s&&!s.sm1)return'crack';if(CRK1S.includes(k)&&s&&!(s.cs&&s.cs[k]))return'crack';if(SHIP[k])return'ship';
+ if(ISL.has(k))return(s.sv&&!s.lo)?'sunk':'island';
+ if(LAKE.has(k))return'lake';
+ if(RIVER.has(k)||k===GATE||POND.has(k)||CHAN.has(k)||k===POOL)return s.sv?'bed':'river';   // when the east gate shuts, the river, its pond branch and everything downstream (grotto channel and pool) drain
+ if(LCHAN.has(k)||k===LGATE)return s.lo?'river':'bed';
+ if(k===OLDHATCH)return'lava';if(k===SGATE||k===L1G)return'sgate';
+ return'land'}
+const WET=t=>t==='lake'||t==='river'||t==='sunk'||t==='shallow';
+const shipPowered=s=>s.lv===2||s.b.some((b,i)=>b.sl==='pt'&&!b.cr&&chargeAt(s,'b'+i)!=null);   // the ship runs on a charged battery sitting in the ship socket at the crash site
+const isSlot=b=>b.sl!=null&&b.sl!=='dk'&&b.sl!=='pt';
+const radarOn=(s,room)=>s.lv===3?false:s.lv===2?(room==='-4,6'&&!!(s.bt.rs&&s.bt.chg&&s.bt.h==='-4,6')):(!!SHIP[room]&&shipPowered(s));   // who sees the unlabeled points of interest: anyone in the powered ship (level 1) or in the charged radar room (level 2)
+const chargeAt=(s,h)=>{const c=s.ch.find(c=>c.at===h);return c?c.id:null};
+const CCOL=['#ffb347','#ffb347'];   // charge colours: both level 1 charges are orange (a different entry here would give a charge its own colour again)
+const holdCol=(s,h)=>{const id=chargeAt(s,h);return id==null?null:(CCOL[id]||CCOL[0])};
+const pdoorOf=s=>!!s.lo||s.b.some((b,i)=>b.sl==='dk'&&!b.cr&&chargeAt(s,'b'+i)!=null);
+function flags(s){if(s.lv===2||s.lv===3)return{};return{pgOpen:!!s.pg||ROLES.some(r=>s.p[r].h===L1G),sgOpen:chargeAt(s,'sock')!=null&&s.gg,devLocked:s.da&&!s.sv,walls:s.sv&&!s.lo,
+ dopen:!!s.dl,
+ door:!!s.dl,
+ pdoor:pdoorOf(s)}}
+function canEnter(s,role,from,to,f){if(s.lv===3)return canEnter3(s,role,from,to);if(s.lv===2)return canEnter2(s,role,from,to);if(!to)return false;f=f||flags(s);const t=terr(to,s);
+ if(t==='mount'||t==='crack'||t==='lava')return false;
+ if(SHIP[to])return SHIP[from]?true:(from===CRK1&&to==='0,0'&&f.door);   // once the door has opened it stays open: anyone can go in or out
+ if(SHIP[from])return from==='0,0'&&to===CRK1&&f.door;
+ if(ISL.has(from)&&!ISL.has(to)&&f.walls)return false;
+ if(ISL.has(to))return role==='S'&&(ISL.has(from)||!f.walls);
+ if(WET(t))return role==='S';
+ if(t==='sgate')return to===L1G?f.pgOpen:f.sgOpen;
+ return true}
+function holderPos(s,h){if(h==='b0'||h==='b1'){const b=s.b[+h[1]];return[b.h,b.x,b.y]}return HOLD[h]}
+function rays(s){const out=[];const c=s.p.C.h;
+ for(let d=0;d<6;d++){let cur=c,n=0,hit=null;
+  while(true){cur=nb(cur,d);n++;if(!cur)break;if(!s.lv&&SHIP[cur])continue;
+   const here=['E','H','S'].filter(r=>s.p[r].h===cur);if(here.length){hit={r:here,d:n,k:cur};break}if(s.lv===3?(()=>{const t=terr3(cur,s);return t==='mount'||t==='crack'||(t==='sgate'&&!LP3.includes(cur))})():s.lv===2?['mount','cliff','crack','sgate'].includes(terr2(cur,s)):(MOUNT.has(cur)||(cur===CRK1&&!s.sm1)||(CRK1S.includes(cur)&&!(s.cs&&s.cs[cur]))))break}
+  out.push(hit)}return out}
+function shortHint(t){return/^Smash/.test(t)?'Smash the mountain':/^(Pour|Put the charge into)/.test(t)?'Upload charge':/^(Set|Place|Press the key)/.test(t)&&/key ?stone|square|port/i.test(t)&&/key/i.test(t)?'Insert keystone':/^Set/.test(t)?'Insert battery':/^Place the key/.test(t)?'Insert keystone':t}
+function action(s,role){if(s.lv===3)return action3(s,role);if(s.lv===2)return action2(s,role);const p=s.p[role],here=p.h;
+ const dist=(x,y)=>Math.hypot(p.x-x,p.y-y);
+ if(role==='E'){let best=null,bd=1e9,take=false;const ce=p.ce||(p.ce=[]),hold=ce.length?(CCOL[ce[0]]||CCOL[0]):null;   // he can carry several charges, but only of one colour
+  for(const h of['fc','sock','d0','d1','b0','b1']){const[hh,x,y]=holderPos(s,h);if(hh!==here)continue;const dd=dist(x,y);if(dd>3.8||dd>=bd)continue;
+   const id=chargeAt(s,h),has=id!=null;
+   if(has&&(hold==null||(CCOL[id]||CCOL[0])===hold)){best=h;bd=dd;take=true}
+   else if(!has&&ce.length){best=h;bd=dd;take=false}}
+  if(!best)return null;
+  if(take)return{t:'Take the charge from '+HNAME[best],f:()=>{const c=s.ch.find(c=>c.at===best);c.at='E';ce.push(c.id)}};
+  return{t:'Pour your charge into '+HNAME[best],f:()=>{const id=ce.pop();s.ch[id].at=best}}}
+ if(role==='H'){
+  if(p.cy!=null){const b=s.b[p.cy];
+   if(here===PUZZLE&&s.sv&&!s.lo&&s.rv){let best=null,bd=1e9;for(const[sl,[x,y]]of Object.entries(SLOTS)){if(s.b.some(o=>o.sl===sl&&!o.cr))continue;const dd=dist(x,y);if(dd<=3.8&&dd<bd){best=sl;bd=dd}}
+    if(best)return{t:'Set the battery into slot '+best,f:()=>{b.cr=0;b.sl=best;b.h=PUZZLE;[b.x,b.y]=SLOTS[best];p.cy=null}}}
+   if(here===DOCK&&!s.lo&&!s.b.some(o=>o.sl==='dk'))return{t:'Set the battery into the door socket',f:()=>{b.cr=0;b.sl='dk';b.h=DOCK;b.x=0;b.y=1.2;p.cy=null}};
+   if(here===PORT&&!s.b.some(o=>o.sl==='pt'))return{t:'Set the battery into the ship socket',f:()=>{b.cr=0;b.sl='pt';b.h=PORT;b.x=0;b.y=0;p.cy=null}};
+   return{t:'Put the battery down',f:()=>{b.cr=0;b.sl=null;b.h=here;b.x=p.x;b.y=Math.min(p.y+1.4,7);p.cy=null}}}
+  let bi=-1,bd=1e9;s.b.forEach((b,i)=>{if(b.cr||b.h!==here)return;const dd=dist(b.x,b.y);if(dd<=3.8&&dd<bd){bi=i;bd=dd}});
+  if(bi>=0)return{t:s.b[bi].home?'Lift the battery':'Pick up the battery',f:()=>{const b=s.b[bi];if(b.sl==='dk'&&!s.lo&&ROLES.some(r=>s.p[r].h===PLAVA)){note('Unable: a lifeform is on the lava.',['H']);return}b.cr=1;b.sl=null;
+   b.home=false;p.cy=bi}};
+
+
+  for(let k=0;k<6;k++){const n=nb(here,k);if(!n||!(p.x*NX[k]+p.y*NY[k]>=A-4.5))continue;if(n===CRK1&&!s.sm1)return{t:'Smash the cracked mountain',f:()=>{s.sm1=true;note('The rock shatters.',null)}};if(CRK1S.includes(n)&&!(s.cs&&s.cs[n]))return{t:'Smash the cracked mountain',f:()=>{if(!s.cs)s.cs={};s.cs[n]=true;note('The rock shatters.',null)}}}
+  return null}
+ if(role==='S'){
+  return null}
+ return null}
+
+/* ============================== HOST ENGINE ============================== */
+let S=null;                 // authoritative state (host) or latest state (client)
+const IN={C:{mx:0,my:0},E:{mx:0,my:0},H:{mx:0,my:0},S:{mx:0,my:0}};
+let noteSink=null;
+function actWatch(k,on){if(!S)return;const a=S.an||(S.an={});if(a[k]===undefined){a[k]=on;return}if(a[k]!==on){a[k]=on;note(on?'Terminals Activated':'Terminals Deactivated',ROLES)}}   // every puzzle announces when its terminals switch on or off
+function note(tx,to){if(!S)return;S.msgs.push({id:++S.mid,tx,to:to||null});if(S.msgs.length>14)S.msgs.shift()}
+function newTargets(prev){const keys=Object.keys(SLOTS);let t;do{t=shuffle(keys).slice(0,2).sort()}while(prev&&t.join()===prev.join());return t}   // 2 random slots out of 8, never the same pair twice in a row
+function popBatteries(){S.b.forEach((b,i)=>{if(b.sl==='dk'||b.sl==='pt')return;b.cr=0;b.sl=null;b.h=PUZZLE;b.x=i?1.3:-1.3;b.y=.25});S.p.H.cy=null}   // batteries pop free of the slots, charge kept
+function assignButtons(){const o={};shuffle([0,1,2,3]).forEach((sh,i)=>o[ISLORD[i]]=sh);return o}   // which shape sits in which island room
+const isleNo=k=>ISLORD.indexOf(k)+1;   // 1 = south-west end ... 4 = north-east end
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+const rndPw=()=>String(1000+Math.floor(Math.random()*9000));
+// EAST GATE (5 right in a row): the Engineer's device shows a color; the Heavy's keypad screen shows each island room in a different color; the Diver presses the island button whose color matches. A wrong press sends it back to 0.
+function newEast(){const pc=S.ecl;S.eperm=shuffle([0,1,2,3]);const cs=[0,1,2,3].filter(c=>c!==pc);S.ecl=cs[Math.random()*cs.length|0];S.el=ISLORD[S.eperm.indexOf(S.ecl)]}
+// WEST GATE (3 rounds, all at once): once the array is solved (sol) the Heavy reads three numbers in an order (wn) and the Engineer reads three shapes in an order (ws) plus Least to Great or Great to Least (wd). Shape i is worth number i. The Diver presses the shapes in order of their value (wq).
+function newWest(){S.sol=false;S.wp=0;S.wn=shuffle([1,2,3,4,5,6,7,8,9]).slice(0,3);S.ws=shuffle([0,1,2,3]).slice(0,3);S.wd=Math.random()<.5;
+ const o=[0,1,2].sort((x,y)=>S.wn[x]-S.wn[y]);if(S.wd)o.reverse();S.wq=o.map(i=>S.ws[i]);S.bm=assignButtons()}   // the Heavy reads three numbers in an order, the Engineer reads three shapes in an order plus Least to Great or Great to Least; the Diver presses the shapes by the value of their number
+function newState(){return{ph:'play',t:0,won:false,bg:false,out:false,dl:false,cp:[false,false,false,false],
+ p:{C:{h:'0,0',x:0,y:2,cy:null},E:{h:ESPAWN,x:0,y:0,cy:null,ce:[]},H:{h:'4,0',x:0,y:0,cy:null},S:{h:POD,x:-2,y:0,cy:null}},
+ ch:[{id:0,at:'b1'},{id:1,at:'b0'}],
+ b:[{h:CRYSTAL,x:0,y:0,cr:0,sl:null,home:true},{h:PORT,x:0,y:0,cr:0,sl:'pt',home:false}],
+ sm1:false,cs:{},pp:[false,false,false],pc:0,rk:false,rs:false,da:false,ep:0,eperm:[0,1,2,3],el:null,ecl:null,sv:false,lo:false,tg:newTargets(),rd:0,rv:false,sol:false,wn:[],ws:[],wd:false,wq:[],wp:0,bm:assignButtons(),gg:false,
+ hear:{C:[],E:[],H:[],S:[]},rad:[],vis:{C:['0,0'],E:[ESPAWN],H:['4,0'],S:[POD]},pr:{},msgs:[],mid:0,names:{},on:{}}}
+const SPD=12,SPRINT=1.5;   // the Navigator can sprint at one and a half times speed
+function moveRole(role,dt){const p=S.p[role],i=IN[role],ox=p.x,oy=p.y,oh=p.h;let mx=i.mx,my=i.my;const m=Math.hypot(mx,my);if(m<0.05)return;if(m>1){mx/=m;my/=m}
+ const sp=SPD*(role==='S'&&i.sp?SPRINT:1);let x=p.x+mx*sp*dt,y=p.y+my*sp*dt;const f=flags(S);
+ for(let it=0;it<4;it++){let bk=-1,bv=0;for(let k=0;k<6;k++){const v=x*NX[k]+y*NY[k]-A;if(v>bv){bv=v;bk=k}}
+  if(bk<0)break;const n=nb(p.h,bk);
+  if(canEnter(S,role,p.h,n,f)){
+   if(role==='C'&&n===CRK1){S.out=true}
+   p.h=n;x-=2*A*NX[bk];y-=2*A*NY[bk];if(!S.vis[role].includes(n))S.vis[role].push(n);
+   if(role==='E'&&n===DEVICE&&S.da&&!S.sv){} }
+  else{x-=bv*NX[bk];y-=bv*NY[bk]}}
+ {const ni=narInfo(S);if(ni&&p.h===ni.room&&ni.open&&!narOK(role,x,y,ni.d)){   // a narrow pass: the Heavy is too big for the tight middle, so he can only go in part of the way
+  if(oh!==p.h){p.h=oh;x=ox;y=oy}else if(narOK(role,x,oy,ni.d)){y=oy}else if(narOK(role,ox,y,ni.d)){x=ox}else{x=ox;y=oy}}}
+ p.x=x;p.y=y}
+function walkable(role,from,goal){const seen=new Set([from]),q=[from];while(q.length){const c=q.shift();if(c===goal)return true;for(let d=0;d<6;d++){const n=nb(c,d);if(n&&!seen.has(n)&&canEnter(S,role,c,n)){seen.add(n);q.push(n)}}}return false}
+// When the west gate opens the channel floods and cuts the north-west of the map off from the crash site. Anyone in the water, or cut off from the crash-site bank, is swept back there so nobody gets stranded.
+function stranded(role,room){return WET(terr(room,S))||!walkable(role,room,BANK)}
+function eject(){
+ ['E','H'].forEach(r=>{const p=S.p[r];if(!stranded(r,p.h))return;p.h=BANK;p.x=0;p.y=0;if(!S.vis[r].includes(BANK))S.vis[r].push(BANK);note('The water sweeps you away.',[r])});
+ S.b.forEach(b=>{if(b.cr||!stranded('H',b.h))return;b.h=BANK;b.x=0;b.y=0});
+ // charges still sitting in the (now cut-off) device sockets return to free sockets near the ship so the Engineer can reach them
+ let moved=false;['d0','d1'].forEach(h=>{const c=S.ch.find(c=>c.at===h);if(!c)return;const to=['sock','fc'].find(t=>!S.ch.some(x=>x.at===t));if(to){c.at=to;moved=true}});
+ }
+function tick(dt){if(!S||S.ph!=='play')return;if(S.lv===3)return tick3(dt);if(S.lv===2)return tick2(dt);
+ actWatch('a',!!S.da&&!S.sv);
+ if(S.lo){S.ejT=(S.ejT||0)-dt;if(S.ejT<=0){S.ejT=1;eject()}}   // safety net: anyone left cut off after the flood is swept back to the crash site
+ const onL1P=r=>S.p[r].h===L1P&&Math.hypot(S.p[r].x,S.p[r].y)<=PLR,onGRL=r=>S.p[r].h===GRL&&Math.hypot(S.p[r].x,S.p[r].y)<=3;
+ const wasP={},wasG={};ROLES.forEach(r=>{const q=S.p[r];wasP[r]=onL1P(r)?{h:q.h,x:q.x,y:q.y}:null;wasG[r]=onGRL(r)?{h:q.h,x:q.x,y:q.y}:null});
+ ROLES.forEach(r=>moveRole(r,dt));
+ {const inG=ROLES.some(r=>S.p[r].h===L1G),inS=ROLES.some(r=>S.p[r].h===SGATE);   // like the drains: nobody can step off a plate while a life is standing in the gate it holds open
+  const back=(r,w)=>{const q=S.p[r];q.h=w.h;q.x=w.x;q.y=w.y;if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note('Unable: a lifeform is in the gate.',[r])}};
+  if(inG&&!ROLES.some(onL1P))ROLES.forEach(r=>{if(wasP[r])back(r,wasP[r])});
+  if(inS&&!ROLES.some(onGRL))ROLES.forEach(r=>{if(wasG[r])back(r,wasG[r])})}
+ {const q=S.p.S,at=ISL.has(q.h)&&Math.hypot(q.x,q.y)<=PLR;   // the island buttons are plates now: the Navigator steps on one to press it, and must step off before it reads again
+  if(at&&!S.pon&&!S.lo&&(S.sv?S.sol:S.da))pressButton(q.h);S.pon=at}
+ S.b.forEach((b,i)=>{if(b.cr){const p=S.p.H;b.h=p.h;b.x=p.x+1.6;b.y=p.y-1.2}});
+ const pl=S.p;
+  S.cp=CPL.map(([x,y])=>ROLES.some(r=>pl[r].h===FCRY&&Math.hypot(pl[r].x-x,pl[r].y-y)<=2.4));
+ if(!S.won&&S.cp.every(Boolean)&&chargeAt(S,'fc')!=null){S.won=true;S.ph='won'}
+S.pg=ROLES.some(r=>pl[r].h===L1P&&Math.hypot(pl[r].x,pl[r].y)<=PLR);
+ S.gg=ROLES.some(r=>pl[r].h===GRL&&Math.hypot(pl[r].x,pl[r].y)<=3);
+ // the ship door: three plates, all held at once (always live, no water involved). Plate 1 only exists once the cracked mountain is smashed; plate 3 needs the Heavy's weight.
+ {const on=(k,w)=>ROLES.reduce((a,r)=>a+(pl[r].h===k&&Math.hypot(pl[r].x,pl[r].y)<=PLR?WGT[r]:0),0)>=w;
+  S.pw=ROLES.reduce((a,r)=>a+(pl[r].h===PL3&&Math.hypot(pl[r].x,pl[r].y)<=PLR?WGT[r]:0),0);
+  S.pp=[!!S.sm1&&on(CRK1,1),on(PL2,1),on(PL3,2)];S.pc=S.pp.filter(Boolean).length;
+  if(!S.dl&&S.pc===3){S.dl=true;note('The ship door grinds open.',null)}}
+ if(!S.sv){const full=chargeAt(S,'d0')!=null&&chargeAt(S,'d1')!=null;
+  if(full&&!S.da&&!ROLES.some(r=>S.p[r].h===ELAVA||S.p[r].h===HLAVA||S.p[r].h===HLAVA2)){S.da=true;newEast();note('Lava rises.',null)}
+  if(!full&&S.da){S.da=false;S.ecl=null;note('Lava sinks.',null)}}
+ {const pd=flags(S).pdoor;if(pd!==S.pd){if(S.pd!==undefined)note(pd?'Lava sinks.':'Lava rises.',null);S.pd=pd}}
+ if(S.sv&&!S.lo){const chg=b=>chargeAt(S,'b'+S.b.indexOf(b))!=null;
+  const placed=S.b.filter(b=>!b.cr&&isSlot(b)&&chg(b));   // powered batteries sitting in array slots
+  const bad=placed.length>=2&&S.b.every(b=>isSlot(b)&&!b.cr)&&placed.some(b=>!S.tg.includes(b.sl));   // only a wrong answer with BOTH powered batteries in the array resets it
+  const ok=S.tg.every(sl=>S.b.some(b=>!b.cr&&b.sl===sl&&chg(b)))&&S.b.every(b=>!isSlot(b)||S.tg.includes(b.sl));
+  if(bad){S.rd=0;S.rv=true;S.tg=newTargets(S.tg);popBatteries();newWest();note('The array shorts out.',null)}
+  else{S.sol=!!(ok&&S.rv);if(!S.sol)S.wp=0}}
+ // hearing
+ const H={C:[],E:[],H:[],S:[]};
+ ROLES.forEach(a=>ROLES.forEach(b=>{if(a!==b&&pl[a].h===pl[b].h)H[a].push(b)}));
+ S.rad=rays(S);S.rad.forEach(h=>{if(h)h.r.forEach(r=>{if(!H.C.includes(r))H.C.push(r);if(!H[r].includes('C'))H[r].push('C')})});
+ S.hear=H;
+ ROLES.forEach(r=>{const a=action(S,r);S.pr[r]=a?{t:a.t,u:!!a.f}:null});
+ S.t+=dt}
+function doAct(role){if(!S||S.ph!=='play')return;const a=action(S,role);if(a&&a.f)a.f()}
+function eastPress(room){if(S.sv||!S.da)return;
+ if(room===S.el){S.ep++;
+  if(S.ep>=5){S.sv=true;S.rv=true;S.rd=0;S.ecl=null;S.tg=newTargets(S.tg);newWest();note('East Gate Closed, river blocked causing Lake water level to rise.',null)}
+  else{newEast();note('Distant grinding.',null)}}
+ else{S.ep=0;newEast();note('A harsh buzz.',null)}}
+// ---- west gate
+function westPress(room){if(!S.sv||S.lo||!S.sol)return;const sym=S.bm[room];
+ if(sym===S.wq[S.wp]){S.wp++;
+  if(S.wp<S.wq.length){note('Click.',['S']);return}
+  S.rd++;popBatteries();
+  if(S.rd>=3){S.lo=true;eject();note('West Gate Opened, River Diverted, Lake water level normalized.',null)}
+  else{S.tg=newTargets(S.tg);newWest();note('Distant grinding.',null)}}
+ else{S.rd=0;S.tg=newTargets(S.tg);popBatteries();newWest();note('A harsh buzz. The gate resets.',null)}}   // a wrong press wipes every round
+function pressButton(room){if(S.sv)westPress(room);else eastPress(room)}
+
+/* ----- Level 2 rules ----- */
+function terr2(k,s){if(!k)return'void';if(MOUNT2.has(k))return'mount';if(k===L2.rd)return'ship';   // the radar room is a ship tile
+
+ if(L2CRACK.has(k)&&!(s&&s.sm[k]))return'crack';
+ if(k==='0,0'&&s&&s.pz&&s.pz.done)return'grass';   // the plate puzzle drains the middle tile, and nothing else
+ if(k===L2GATE)return(s&&s.ks&&s.ks.done)?'land':'sgate';   // the stone gate opens when the key stone puzzle is solved
+ if(L2LAVA.has(k))return(k===L2.lav&&s&&s.dl)?'land':'lava';
+ if(s&&s.ks&&s.ks.on&&!s.ks.done&&KLOCK.includes(k))return'lava';
+ if(L2DEEP.has(k))return'lake';
+ const g=L2GRP[k];if(g)return(s&&s.act&&g.includes(s.act))?'bed':'shallow';
+ return'land'}
+function canEnter2(s,role,from,to){if(!to)return false;const t=terr2(to,s);
+ if(t==='lava'||t==='cliff'||t==='mount'||t==='crack'||t==='sgate')return false;   // nobody crosses lava or rock; the Heavy smashes cracked rock
+ if(t==='shallow'||t==='lake')return role==='S';                       // only the Diver wades and swims
+ return true}
+const WGT={C:1,E:1,H:2,S:1};   // how much each of the crew weighs on the plate (it needs 2)
+const PLR=2.4;                 // pressure plate radius (same as level 1)
+const DPOS=[0,4.5];            // the door plate on the revealed tile
+const PL7=['-4,3','-5,4','-4,4','-3,4','-6,5','-5,6','-4,5'];   // the seven plates of the terminal puzzle
+const KR='5,0',KTL='0,-5',KTR='4,-4';   // key stone puzzle: the Heavy's terminal and grid (right), the Diver's screen (top left), the Engineer's screen (bottom left)
+const KLAVA=['3,0','0,-3','-3,3'],KLOCK=KLAVA.concat(['3,-3','0,2']);   // the deep water at 3,-3 and the smashed tile at 0,2 also turn to lava while the puzzle runs
+const L2GATE='0,4';   // the stone gate covers drain 4's charge socket until the key stone puzzle is solved
+const FC2='0,3';   // the final crystal (four plates), down the middle column
+const CPL2=[[-5,-4],[5,-4],[-5,4],[5,4]];       // these shallow tiles turn to lava while the puzzle runs
+const KSOCK=[7.6,-3.2],KC=3,KGX=-6,KGY=-4.5;   // battery socket, grid cell size and grid origin in the Heavy's room (4 x 4 cells)
+const KPOOL='ABCDEFGHJKLMNPRSTUVWXYZ'.split('');
+const TSOCK=[0,6];   // the plate terminal's charge socket sits low in its room so the screen can be centred
+const SOCK2=[0,3];             // where a drain's socket, slot or plate sits in its room
+function rollPz(pz){const a=[0,1,2,3,4,5,6];for(let i=6;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}pz.sol=[[a[0],a[1]],[a[2],a[3]],[a[4],a[5]]]}   // three new pairs, six different plates
+function newPz(){const pz={st:0,lk:false,done:false,dw:[0,0,0,0,0,0,0],pr:[]};rollPz(pz);return pz}
+const KSTART=['0,-4','5,-1','4,1','-4,0','0,0'];   // where the five key stones lie at the start
+const KSPOT=[[-7.4,-3],[-7.4,-.8],[-7.4,1.4],[-7.4,3.6],[-7.4,5.8]];   // down the left side of the Heavy's room, away from the battery socket: stones come back here after a wrong answer
+function newKs(){return{on:false,done:false,n:0,carry:-1,st:KSTART.map((h,i)=>({h,x:i===0?-5.5:0,y:i===0?5.5:0,pl:null})),L:[],t:'',ec:[],dc:[],lp:null}}
+const kCenter=(c,r)=>[KGX+c*KC+KC/2,KGY+r*KC+KC/2];
+const kTaken=(ks,c,r)=>ks.st.some(q=>q.pl&&q.pl[0]===c&&q.pl[1]===r);
+function kRound(k){let a,t,ec,dc,tries=0;do{a=shuffle(KPOOL).slice(0,4);t=a[Math.random()*4|0];ec=shuffle(a);dc=shuffle(a);tries++}while(tries<80&&kTaken(k,dc.indexOf(t),ec.indexOf(t)));k.L=a;k.t=t;k.ec=ec;k.dc=dc}   // the Heavy gets a letter; the Engineer sees the four letters top to bottom, the Diver left to right. The answer is never a cell that already holds a stone.
+function kRespawn(s){const ks=s.ks;ks.st.forEach((q,i)=>{if(q.pl){q.pl=null;q.h=KR;q.x=KSPOT[i][0];q.y=KSPOT[i][1]}});if(ks.carry>=0){ks.carry=-1}}   // every stone on the grid goes back next to the panel
+function kCell(x,y){return[Math.max(0,Math.min(3,Math.floor((x-KGX)/KC))),Math.max(0,Math.min(3,Math.floor((y-KGY)/KC)))]}
+function kPlace(s,p){const ks=s.ks,i=ks.carry,[c,r]=kCell(p.x,p.y),ok=c===ks.dc.indexOf(ks.t)&&r===ks.ec.indexOf(ks.t);ks.lp=[c,r,ok?1:0];
+ const q=ks.st[i];q.pl=[c,r];q.h=KR;[q.x,q.y]=kCenter(c,r);ks.carry=-1;
+ if(ok){ks.n++;if(ks.n>=5){ks.done=true;ks.on=false;note('The terminal chimes: the last key stone fits. Far away, the stone gate opens.',null);return}note('A chime. '+ks.n+' of 5.',null);kRound(ks)}
+ else{ks.n=0;kRespawn(s);note('A harsh buzz. The key stones jump back next to the panel.',null);kRound(ks)}}
+const inKGrid=(x,y)=>x>=KGX&&x<=KGX+4*KC&&y>=KGY&&y<=KGY+4*KC;
+function resetPz(s){s.pz.st=0;s.pz.lk=false;s.pz.dw=[0,0,0,0,0,0,0];s.pz.pr=[]}
+function newState2(){return{lv:2,ph:'play',t:0,won:false,
+ p:{C:{h:L2.c,x:0,y:0,cy:null},E:{h:L2.e,x:0,y:0,cy:null,cn:0},H:{h:L2.h,x:0,y:0,cy:null},S:{h:L2.s,x:0,y:0,cy:null,w:0}},
+ ch:[],b:[],bt:{h:L2.bat,x:0,y:0,cr:0,chg:1,sl:0,rs:0},sm:{},c1:false,wt:0,act:0,ks:newKs(),dl:false,dw:0,tc:false,pz:newPz(),q:[],blk:0,ac:false,c4:false,w4:0,fcc:0,cp2:[false,false,false,false],
+ an:{h:null,x:0,y:0},hear:{C:[],E:[],H:[],S:[]},rad:[],vis:{C:[L2.c],E:[L2.e],H:[L2.h],S:[L2.s]},pr:{},msgs:[],mid:0,names:{},on:{}}}
+// which shallow tiles would change if drain n were the active one (n=0: none)
+const wetTiles=s=>Object.keys(L2GRP).filter(k=>!L2CRACK.has(k)||s.sm[k]);
+const drainDiff=(s,from,to)=>wetTiles(s).filter(k=>L2GRP[k].includes(from)!==L2GRP[k].includes(to));
+// a drain is locked while any life is standing on its tiles: whoever works it cannot switch it off
+const drainLocked=(s,n)=>s.act===n&&n>0&&ROLES.some(r=>wetTiles(s).some(k=>L2GRP[k].includes(n)&&s.p[r].h===k));
+const underWater=(s,k)=>{const t=terr2(k,s);return t==='shallow'||t==='lake'};   // nothing under the water can be seen or touched until it is drained
+const LOCKMSG='Unable: there is a lifeform in the water.';
+const BUSYMSG='Unable: another drain is running.';   // only one drain at a time takes input
+function action2(s,role){const p=s.p[role],here=p.h;const dist=(x,y)=>Math.hypot(p.x-x,p.y-y);
+ if(role==='E'){
+  if(here===L2.d1&&dist(SOCK2[0],SOCK2[1])<=3.8){
+   if(!s.c1&&p.cn>0)return{t:'Pour your charge into drain 1',f:()=>{if(s.act&&s.act!==1){note(BUSYMSG,['E']);return}s.c1=true;p.cn--}};
+   if(s.c1)return{t:'Take the charge from drain 1',f:()=>{if(drainLocked(s,1)){note(LOCKMSG,['E']);return}s.c1=false;p.cn=(p.cn||0)+1}}}
+  if(here===L2.tm&&dist(TSOCK[0],TSOCK[1])<=3.8){
+   if(!s.tc&&p.cn>0)return{t:'Pour your charge into the terminal',f:()=>{s.tc=true;p.cn--;rollPz(s.pz);note('The terminal wakes up.',['E'])}};
+   if(s.tc)return{t:s.pz.done?'Take the charge from the terminal':'Take the charge from the terminal (the puzzle resets)',f:()=>{s.tc=false;p.cn=(p.cn||0)+1;if(!s.pz.done)resetPz(s)}}}
+  if(here===L2.d4&&dist(SOCK2[0],SOCK2[1])<=3.8){
+   if(!s.c4&&p.cn>0)return{t:'Pour your charge into drain 4',f:()=>{if(s.act&&s.act!==4){note(BUSYMSG,['E']);return}s.c4=true;p.cn--}};
+   if(s.c4)return{t:'Take the charge from drain 4',f:()=>{if(drainLocked(s,4)){note(LOCKMSG,['E']);return}s.c4=false;p.cn=(p.cn||0)+1}}}
+  if(here===FC2&&dist(0,0)<=4.2){
+   if(!s.fcc&&p.cn>0)return{t:'Pour your charge into the crystal',f:()=>{s.fcc=1;p.cn--;note('The crystal glows.',null)}};
+   if(s.fcc)return{t:'Take the charge from the crystal',f:()=>{s.fcc=0;p.cn=(p.cn||0)+1}}}
+  if(here===L2.ant&&dist(0,0)<=3.8){
+   if(!s.ac&&p.cn>0)return{t:'Pour the charge into the antenna socket',f:()=>{s.ac=true;p.cn--;note('The antenna hums.',null)}};
+   if(s.ac)return{t:'Take the charge back (the antenna goes dead)',f:()=>{s.ac=false;p.cn=(p.cn||0)+1}}}
+  {const bt=s.bt,ks=s.ks;if(bt.ts&&bt.h===here&&dist(bt.x,bt.y)<=3.8){   // the battery sitting in the key terminal: the Engineer can charge it (switching the puzzle on) or take the charge back (switching it off)
+    if(!bt.chg&&p.cn>0)return{t:'Pour your charge into the battery in the key terminal',f:()=>{if(ks.done){bt.chg=1;p.cn--;return}if(KLOCK.some(k=>ROLES.some(r=>s.p[r].h===k))){note(LOCKMSG,['E']);return}bt.chg=1;p.cn--;ks.on=true;ks.n=0;ks.lp=null;kRound(ks);note('The terminal lights up. The water at the ends turns to lava.',null)}};
+    if(bt.chg)return{t:ks.done?'Take the charge from the battery':'Take the charge from the battery (the key terminal switches off)',f:()=>{bt.chg=0;p.cn=(p.cn||0)+1;if(ks.done)return;ks.on=false;ks.n=0;ks.lp=null;kRespawn(s);note('The terminal goes dark and the lava cools back to water.',null)}};
+    return null}}
+  {const bt=s.bt;if(bt.h===here&&!bt.ts&&!underWater(s,here)&&dist(bt.x,bt.y)<=3.8){
+    if(bt.chg)return{t:'Take the charge from the battery',f:()=>{if(bt.sl&&drainLocked(s,3)){note(LOCKMSG,['E']);return}bt.chg=0;p.cn=(p.cn||0)+1}};
+    if(!bt.chg&&p.cn>0)return{t:'Pour your charge into the battery',f:()=>{if(bt.sl&&s.act&&s.act!==3){note(BUSYMSG,['E']);return}bt.chg=1;p.cn--}}}}
+  return null}
+ if(role==='H'){
+  const bt=s.bt,ks=s.ks;
+  if(ks.carry>=0){const[kc,kr]=kCell(p.x,p.y);if(here===KR&&ks.on&&!ks.done&&inKGrid(p.x,p.y)&&!kTaken(ks,kc,kr))return{t:'Place the key stone',f:()=>kPlace(s,p)};return{t:'Put the key stone down',f:()=>{const q=ks.st[ks.carry];q.h=here;q.x=p.x;q.y=Math.max(-7,Math.min(p.y+1.6,7));ks.carry=-1}}}
+  for(let k=0;k<6;k++){const n=nb(here,k);if(n&&terr2(n,s)==='crack'&&p.x*NX[k]+p.y*NY[k]>=A-4.5)return{t:'Smash the cracked mountain',f:()=>{s.sm[n]=true;note('The rock shatters.',null)}}}
+  if(bt.cr){
+   if(here===KR&&!ks.on&&!bt.ts&&dist(KSOCK[0],KSOCK[1])<=3.8)return{t:bt.chg?'Set the charged battery into the key terminal':'Set the battery into the key terminal',f:()=>{if(bt.chg&&!ks.done&&KLOCK.some(k=>ROLES.some(r=>s.p[r].h===k))){note(LOCKMSG,['H']);return}bt.cr=0;bt.sl=0;bt.ts=1;bt.h=here;bt.x=KSOCK[0];bt.y=KSOCK[1];p.cy=null;if(bt.chg&&!ks.done){ks.on=true;ks.n=0;ks.lp=null;kRound(ks);note('The terminal lights up. The water at the ends turns to lava.',null)}else note('The battery clicks into the socket. Nothing happens.',null)}};
+   if(here===L2.rd&&!bt.rs&&dist(SOCK2[0],SOCK2[1])<=3.8)return{t:bt.chg?'Set the charged battery into the radar':'Set the battery into the radar',f:()=>{bt.cr=0;bt.rs=1;bt.sl=0;bt.h=here;bt.x=SOCK2[0];bt.y=SOCK2[1];p.cy=null;if(bt.chg)note('The radar hums.',null)}};
+   if(here===L2.d3&&!bt.sl&&dist(SOCK2[0],SOCK2[1])<=3.8)return{t:'Set the battery into drain 3',f:()=>{if(bt.chg&&s.act&&s.act!==3){note(BUSYMSG,['H']);return}bt.cr=0;bt.sl=1;bt.h=here;bt.x=SOCK2[0];bt.y=SOCK2[1];p.cy=null}};
+   return{t:'Put the battery down',f:()=>{bt.cr=0;bt.h=here;bt.x=p.x;bt.y=Math.max(-7,Math.min(p.y+1,7));p.cy=null}}}
+  if(bt.ts&&bt.h===here&&dist(bt.x,bt.y)<=3.8)return{t:ks.on?'Take the battery out of the key terminal (it switches off)':'Take the battery out of the key terminal',f:()=>{const was=ks.on;bt.cr=1;bt.ts=0;bt.sl=0;p.cy=0;if(ks.done)return;ks.on=false;ks.n=0;ks.lp=null;kRespawn(s);if(was)note('The terminal goes dark and the lava cools back to water.',null)}};
+  if(bt.h===here&&!bt.ts&&!underWater(s,here)&&dist(bt.x,bt.y)<=3.8)return{t:(bt.sl||bt.rs)?'Lift the battery out of the slot':'Pick up the battery',f:()=>{if(bt.sl&&drainLocked(s,3)){note(LOCKMSG,['H']);return}bt.cr=1;bt.sl=0;bt.rs=0;p.cy=0}};
+  if(ks.carry<0&&!bt.cr&&!underWater(s,here)){let bi=-1,bd=1e9;ks.st.forEach((q,i)=>{if(q.pl||q.h!==here)return;const dd=dist(q.x,q.y);if(dd<=3.8&&dd<bd){bi=i;bd=dd}});if(bi>=0)return{t:'Pick up the key stone',f:()=>{ks.carry=bi}}}
+  return null}
+ return null}
+function tick2(dt){
+ actWatch('t',!!S.tc&&!S.pz.done);actWatch('k',!!S.ks.on&&!S.ks.done);
+ const onPlate=r=>S.p[r].h===L2.d2&&Math.hypot(S.p[r].x-SOCK2[0],S.p[r].y-SOCK2[1])<=PLR;
+ const onDoor=r=>S.p[r].h===L2.dp&&terr2(L2.dp,S)==='bed'&&Math.hypot(S.p[r].x-DPOS[0],S.p[r].y-DPOS[1])<=PLR;
+ const was={},wasD={};ROLES.forEach(r=>{const q=S.p[r];was[r]=onPlate(r)?{h:q.h,x:q.x,y:q.y}:null;wasD[r]=onDoor(r)?{h:q.h,x:q.x,y:q.y}:null});
+ const onP4=r=>S.p[r].h===L2.p4&&Math.hypot(S.p[r].x-SOCK2[0],S.p[r].y-SOCK2[1])<=PLR;
+ const was4={};ROLES.forEach(r=>{const q=S.p[r];was4[r]=onP4(r)?{h:q.h,x:q.x,y:q.y}:null});
+ S.p0={};ROLES.forEach(r=>{const q=S.p[r];S.p0[r]={h:q.h,x:q.x,y:q.y}});
+ ROLES.forEach(r=>moveRole(r,dt));
+ ROLES.forEach(r=>{if(!was[r]&&onPlate(r)&&S.act&&S.act!==2){const q=S.p[r],o=S.p0&&S.p0[r];if(o){q.h=o.h;q.x=o.x;q.y=o.y}if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note(BUSYMSG,[r])}}});
+ if(drainLocked(S,2))ROLES.forEach(r=>{if(was[r]&&!onPlate(r)){const q=S.p[r];q.h=was[r].h;q.x=was[r].x;q.y=was[r].y;if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note(LOCKMSG,[r])}}});
+ // drain 4's plate (one person is enough): same rules as drain 2's plate
+ ROLES.forEach(r=>{if(!was4[r]&&onP4(r)&&S.act&&S.act!==4){const q=S.p[r],o=S.p0&&S.p0[r];if(o){q.h=o.h;q.x=o.x;q.y=o.y}if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note(BUSYMSG,[r])}}});
+ if(drainLocked(S,4))ROLES.forEach(r=>{if(was4[r]&&!onP4(r)){const q=S.p[r];q.h=was4[r].h;q.x=was4[r].x;q.y=was4[r].y;if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note(LOCKMSG,[r])}}});
+ S.w4=ROLES.filter(onP4).length;
+ // the door plate: while a life stands on the lava tile the door cannot change, so whoever holds the plate cannot leave it
+ if(S.dl&&ROLES.some(r=>S.p[r].h===L2.lav))ROLES.forEach(r=>{if(wasD[r]&&!onDoor(r)&&S.p[r].h!==L2.lav){const q=S.p[r];q.h=wasD[r].h;q.x=wasD[r].x;q.y=wasD[r].y;if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note('Unable: there is a lifeform on the lava.',[r])}}});
+ S.dw=ROLES.reduce((a,r)=>a+(onDoor(r)?WGT[r]:0),0);
+ {const w=S.dw>=2;if(w!==S.dl&&!(S.dl&&ROLES.some(r=>S.p[r].h===L2.lav)))S.dl=w}
+ const pl=S.p;if(S.bt.cr){S.bt.h=pl.H.h;S.bt.x=pl.H.x+1.6;S.bt.y=pl.H.y-1.2}
+ if(S.ks.carry>=0){const q=S.ks.st[S.ks.carry];q.h=pl.H.h;q.x=pl.H.x-1.6;q.y=pl.H.y-1.2}
+ // what each drain wants: 1 = a charge in its socket, 2 = enough weight on its plate, 3 = a charged battery in its slot, 4 = a charge in its socket AND someone on its plate
+ S.wt=ROLES.reduce((a,r)=>a+(pl[r].h===L2.d2&&Math.hypot(pl[r].x-SOCK2[0],pl[r].y-SOCK2[1])<=PLR?WGT[r]:0),0);
+ const want={1:S.c1,2:S.wt>=2,3:!!(S.bt.sl&&S.bt.chg&&S.bt.h===L2.d3),4:!!(S.c4&&S.w4>=1)};
+ S.q=S.q.filter(n=>want[n]);[1,2,3,4].forEach(n=>{if(want[n]&&!S.q.includes(n))S.q.push(n)});
+ // only one drain at a time: the running one keeps the water until it is switched off, then the next in line takes over.
+ // Nobody may stand on a tile that is about to be drained or filled, so a change waits until those tiles are clear.
+ const next=want[S.act]?S.act:(S.q[0]||0);S.blk=0;
+ if(next!==S.act){const ch=drainDiff(S,S.act,next);if(ROLES.some(r=>ch.includes(pl[r].h)))S.blk=next||S.act;
+  else{S.act=next;note(next?'Water drains away.':'The water floods back.',null)}}
+ {const pz=S.pz;
+  if(S.tc&&!pz.done){const pr=[];PL7.forEach((k,i)=>{const on=ROLES.some(r=>pl[r].h===k&&Math.hypot(pl[r].x,pl[r].y)<=PLR);pz.dw[i]=on?(pz.dw[i]||0)+dt:0;if(pz.dw[i]>=.6)pr.push(i)});pz.pr=pr;
+   if(pz.lk){if(!pr.length)pz.lk=false}
+   else if(pr.length>=2){const sol=pz.sol[pz.st];
+    if(pr.length===2&&pr.includes(sol[0])&&pr.includes(sol[1])){pz.st++;pz.lk=true;if(pz.st>=3){pz.done=true;note('The terminal chimes: puzzle solved. Far away, water drains.',null)}else note('A chime. '+pz.st+' of 3.',null)}
+    else{pz.st=0;pz.lk=true;rollPz(pz);note('A harsh buzz. The puzzle starts over with new tiles.',null)}}}
+  else if(!S.tc){pz.pr=[];pz.dw=[0,0,0,0,0,0,0]}}
+ S.cp2=CPL2.map(([x,y])=>ROLES.some(r=>pl[r].h===FC2&&Math.hypot(pl[r].x-x,pl[r].y-y)<=PLR));   // the final crystal: a charge in it and all four plates held at once
+ if(!S.won&&S.fcc&&S.cp2.every(Boolean)){S.won=true;S.ph='won'}
+ const H={C:[],E:[],H:[],S:[]};
+ ROLES.forEach(a=>ROLES.forEach(b=>{if(a!==b&&pl[a].h===pl[b].h)H[a].push(b)}));
+ S.rad=rays(S);S.rad.forEach(h=>{if(h)h.r.forEach(r=>{if(!H.C.includes(r))H.C.push(r);if(!H[r].includes('C'))H[r].push('C')})});
+ S.an.h=S.ac?L2.ant:null;
+ if(S.an.h)['E','H','S'].forEach(r=>{if(pl[r].h===S.an.h){if(!H.C.includes(r))H.C.push(r);if(!H[r].includes('C'))H[r].push('C')}});   // whoever stands at a powered antenna is connected to the Commander
+ S.hear=H;
+ ROLES.forEach(r=>{const a=action(S,r);S.pr[r]=a?{t:a.t,u:!!a.f}:null});
+ S.t+=dt}
+
+/* ----- Level 3: The Hub ----- */
+// The map is the picture from the editor. A hub (the centre tile and the ring around it) is walled in by mountains and gate tiles. Behind each side lies a sector, and mountain + lava walls between the sectors keep them apart. Only the Navigator can swim the water.
+// One gate tile per side of the hub: orange charge = left (lava), the hub plate (two people, or the Heavy) = top right (lava), lime charge = bottom right (water it drains to ground); the top-left stone gate and the right lava have no trigger yet. Each doorway is two tiles, the one next to the centre and the gate behind it. Batteries do nothing for now. The tile at the bottom left of the centre is a stone gate that the first puzzle opens.
+const D3={sw:'-2,2'};   // the swim side
+const PAIR3={oc:['-1,0','-2,0'],ob:['0,-1','0,-2'],pl:['1,-1','2,-2'],lc:['1,0','2,0'],lb:['0,1','0,2']};   // each doorway is the tile next to the centre plus the gate tile behind it; both look the same and open together
+const GATEOF3={};Object.entries(PAIR3).forEach(([t,a])=>a.forEach(k=>GATEOF3[k]=t));
+const PLATE3=2;   // the centre plate asks for two people, or the Heavy alone
+const L3MOUNT=new Set(['3,-6','-3,-3','1,-3','2,-3','6,-3','-1,-2','1,-2','3,-2','-2,-1','-1,-1','2,-1','3,-1','-3,1','-2,1','1,1','2,1','-3,2','-1,2','1,2','-6,3','-2,3','-1,3','3,3','-3,6']);
+const L3LAVA=new Set(['-3,3','4,-2','2,-4']);
+const KSS3=s=>[s.ks,s.kb].filter(Boolean),hk3=s=>KSS3(s).find(k=>k.at==='H');   // there are two keystones now; the Heavy carries one thing at a time
+const L3GATE=new Set([]);   // no plate-driven stone gates any more: every plate-cooled tile is lava
+const L3CRACK=new Set(['1,3','-4,1']);   // cracked mountain the Heavy smashes
+const L3WATER=new Set(['-2,4','-4,2','-2,-2','2,2']);   // the top path at 2,-4 is lava that a two-person plate at 3,-4 cools
+const SG3='-1,1';   // the stone gate right at the bottom left of the centre tile: it vanishes when the rotating puzzle is solved
+const L3COL=['#ffb347','#b6f23a','#c7c1ff'];   // orange, lime, crystal
+const B3={o:'-1,-3',p2:'4,-1',e:'3,0'};   // e: an empty battery just beyond the east lava gate   // the charged orange battery lies in the right sector; a plain plate at 5,-4 cools the lava at 5,-3 and 5,-2 between the top-right and right sectors
+const PLS3=[{r:'3,-4',need:3,lv:['2,-4']},{r:'-2,2',pos:[-3.4,0],need:2,lv:['-3,3']},{r:'-2,2',pos:[3.4,0],need:2,lv:['-3,3']},{r:'4,-1',need:1,lv:['4,-2']}];   // plates out in the sectors: each takes two of the others (or the Heavy alone). Two plates in the same room must both be held to cool the lava at -4,4
+const LP3=PLS3.flatMap(q=>q.lv);
+const CHS3=[-5.5,3.5],BTS3=[5.5,3.5],PLT3=[0,-3.5];
+// The keystone puzzle: the Engineer charges the terminal at 5,-5, which wakes the screens at -5,5 (Navigator) and -5,0 (Heavy's socket ring).
+// Engineer's screen: a number N. Navigator's screen: a shape. Heavy's ring: six sockets, each with a shape. The right socket is N places round the ring from the socket showing that shape, in the direction the arrow on the Engineer's screen turns (it changes every round). Five right answers in a row win; a wrong answer or a pulled charge starts over.
+const TERM3={e:'4,-4',s:'0,-4',h:'-4,0'};   // puzzle one: Engineer, Navigator (bottom right, shared with the Engineer in puzzle two) and Heavy
+// Puzzle two (an orange charge in the hub port wakes it): four stations, six lettered spots each. Right terminal and top-right terminal: six plain plates anyone can stand on. Left terminal: six ports for the terminal's charge. Bottom-right terminal: six ports for the keystone.
+// Every round each station shows six letters. One letter is on all four stations, each station has one letter nobody else has, one letter shared with exactly one other station, and three letters shared with two others. One word appears on ONE screen only: SAME (top right), PAIRS (left) or UNIQUE (bottom right). Everyone must pick their letter that fits the word (SAME: the letter all four have; PAIRS: the one shared with exactly one other station; UNIQUE: the one nobody else has). Five rounds in a row win; one wrong pick once all four are in resets everything. After every attempt the charge and keystone return to the middle of their terminals. The same word never comes up twice in a row.
+const T2={c:'4,0',e:'-4,0',h:'0,4',s:'4,-4'};
+const TERM2=[T2.c,T2.h];   // the terminals only puzzle two uses
+const P2ST=['R','T','L','B'];   // right (plates), top right (plates), left (charge ports), bottom right (keystone ports)
+const P2ROOM={R:T2.c,T:T2.s,L:T2.e,B:T2.h};
+const P2WORD={T:'SAME',L:'PAIRS',B:'UNIQUE'};   // the word shows on this station's screen only when it is the round's word
+const P2MODES=['SAME','PAIRS','UNIQUE'];
+const P2POS=[0,1,2,3,4,5].map(i=>[6.4*Math.cos(i*Math.PI/3),6.4*Math.sin(i*Math.PI/3)]),P2R=1.5,P2DW=.6,P2NEED=3,P2CY=1.6,P2ORDER=['SAME','UNIQUE','PAIRS'];   // P2CY: where the charge and keystone wait in the middle of their rooms
+function newP2(n,done,pm){const sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+ const L=sh('ABCDEFGHJKLMNPRSTUVWXYZ'.split('')),all=L[0],uni=L.slice(1,5),tri=L.slice(5,9),pl=[L[9],L[10]],ord=sh([0,1,2,3]);
+ const pairOf=[];pairOf[ord[0]]=0;pairOf[ord[1]]=0;pairOf[ord[2]]=1;pairOf[ord[3]]=1;
+ const mode=P2ORDER[Math.min(n||0,P2NEED-1)],lay={},want={};   // three rounds, always in the same order: SAME, then UNIQUE, then PAIRS
+ 
+ P2ST.forEach((k,i)=>{lay[k]=sh([all,uni[i],pl[pairOf[i]]].concat(tri.filter((_,m)=>m!==i)));want[k]=mode==='SAME'?all:mode==='PAIRS'?pl[pairOf[i]]:uni[i]});
+ return{n:n||0,done:!!done,mode,lay,want,sel:{R:-1,T:-1,L:-1,B:-1},dw:{R:[0,0,0,0,0,0],T:[0,0,0,0,0,0]},nl:{R:0,T:0},fl:null}}
+const p2On=s=>s.cp===0&&!s.p2.done;
+function p2Respawn(){{const k=KSS3(S).find(q=>q.port!=null&&q.h===T2.h&&q.at===null)||S.ks;Object.assign(k,{h:T2.h,x:0,y:P2CY,at:null});delete k.port}   // the keystone that was in the port goes back to the middle
+ S.pch={h:T2.e,x:0,y:P2CY,at:null}}
+function resetP2(){S.p2=newP2(0,false,S.p2&&S.p2.mode)}
+const p2Near=(s,k,i)=>ROLES.some(r=>{const q=s.p[r];return q.h===P2ROOM[k]&&Math.hypot(q.x-P2POS[i][0],q.y-P2POS[i][1])<=P2R});
+let _p2lv=null;const p2lv=()=>_p2lv||(_p2lv=[...new Set(Object.values(T2).flatMap(k=>[0,1,2,3,4,5].map(d=>nb(k,d)).filter(q=>q&&['land','crack'].includes(terr3(q,null)))))]);   // the three ground tiles around each of the four terminals (a cracked mountain counts once it has been smashed)
+function tickP2(dt){const z=S.p2;if(!z)return;
+ z.sel.L=S.pch&&S.pch.port!=null&&S.pch.h===T2.e?S.pch.port:-1;{const q=KSS3(S).find(q=>q.port!=null&&q.at===null&&q.h===T2.h);z.sel.B=q?q.port:-1}   // the charge and keystone can be put into their ports whether or not the puzzle is awake
+ {const want=p2On(S)&&z.n>=1,L=S.p2l||(S.p2l={});const had=Object.keys(L).length>0;   // once the first round is solved, the ground around the terminals turns to lava until the puzzle is failed, finished or switched off; a tile only changes while it is empty
+  p2lv().forEach(k=>{if(!want)delete L[k];else if(!L[k]&&terr3(k,S)==='land'&&!ROLES.some(r=>S.p[r].h===k))L[k]=1});
+  const has=Object.keys(L).length>0;if(has&&!had)note('Lava rises around the terminals.',ROLES);else if(had&&!has)note('The lava cools.',ROLES)}
+ if(!p2On(S)){['R','T'].forEach(k=>{z.dw[k]=[0,0,0,0,0,0];z.sel[k]=-1;z.nl[k]=0});return}
+ ['R','T'].forEach(k=>{const any=[0,1,2,3,4,5].some(i=>p2Near(S,k,i));
+  if(z.nl[k]){if(!any)z.nl[k]=0;z.sel[k]=-1;z.dw[k]=[0,0,0,0,0,0];return}   // after a round everyone steps off before the plates read again
+  const lk=[];for(let i=0;i<6;i++){z.dw[k][i]=p2Near(S,k,i)?z.dw[k][i]+dt:0;if(z.dw[k][i]>=P2DW)lk.push(i)}
+  z.sel[k]=lk.length===1?lk[0]:-1});
+ if(P2ST.every(k=>z.sel[k]>=0)){const ok=P2ST.every(k=>z.lay[k][z.sel[k]]===z.want[k]);
+  if(ok){const n=z.n+1;S.p2=newP2(n,n>=P2NEED,z.mode);note(n>=P2NEED?'The relay is complete. The narrow pass widens.':'Correct. '+n+' of '+P2NEED+'.',ROLES)}
+  else{S.p2=newP2(0,false,z.mode);note('Wrong. The relay resets.',ROLES)}
+  p2Respawn();S.p2.fl={ok:ok?1:0,t:S.t};['R','T'].forEach(k=>{S.p2.nl[k]=[0,1,2,3,4,5].some(i=>p2Near(S,k,i))?1:0})}}
+
+const B3L='-4,4';   // the charged lime battery
+const TSLOT3=[0,-3.2],KS3={h:'3,-3'},KB3='3,1',FC3='0,-3',KSR=4.2,KSNEED=5;
+const SHN3=['triangle','circle','square','diamond','star','cross'];
+const sockXY=i=>{const a=(-90+60*i)*Math.PI/180;return[KSR*Math.cos(a),KSR*Math.sin(a)]};
+function newPz3(n,done){const ring=[0,1,2,3,4,5];for(let i=5;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ring[i],ring[j]]=[ring[j],ring[i]]}
+ return{n:n||0,done:!!done,ring,sh:Math.floor(Math.random()*6),off:1+Math.floor(Math.random()*5),dir:Math.random()<.5?1:-1,fl:null}}
+const pzAns3=z=>(((z.ring.indexOf(z.sh)+z.dir*z.off)%6)+6)%6;   // N places round the ring from the shown shape, in the direction the arrow turns
+const pzOn3=s=>s.tc===0&&!s.pz.done;
+const PZL3=[0,1,5].map(d=>{const[q,r]=TERM3.h.split(',').map(Number);return(q+DIRS[d][0])+','+(r+DIRS[d][1])});   // east, north-east and south-east of the Heavy's terminal turn to lava while puzzle one runs
+const pzLock3=s=>ROLES.some(r=>PZL3.includes(s.p[r].h));   // the first puzzle wakes on an orange charge
+const bpBat=s=>s.bt.find(b=>b.at==='bp');
+const onPlate3=(s,r)=>{const q=s.p[r];return q.h==='0,0'&&Math.hypot(q.x-PLT3[0],q.y-PLT3[1])<=PLR};
+const onPl=(s,q,r)=>{const t=s.p[r],pp=q.pos||[0,0];return t.h===q.r&&Math.hypot(t.x-pp[0],t.y-pp[1])<=PLR};
+const plSat=(s,q)=>{const on=ROLES.filter(r=>onPl(s,q,r));return on.includes('H')||on.length>=q.need};   // enough hands on it
+const lvOcc=(s,q)=>ROLES.some(r=>q.lv.includes(s.p[r].h));
+const coolTile3=(s,k)=>{const qs=PLS3.filter(q=>q.lv.includes(k));return qs.length>0&&(qs.every(q=>plSat(s,q))||(!qs[0].wet&&qs.some(q=>lvOcc(s,q))))};   // lava stays cool under whoever stands on it; water only drains while its plate is held
+const coolTo3=k=>{const q=PLS3.find(q=>q.lv.includes(k));return q&&q.to==='lake'?'lake':'land'};   // the lava stays cool while the plate is held or someone stands on it
+const weight3=s=>{const on=ROLES.filter(r=>onPlate3(s,r));return on.includes('H')?PLATE3:on.length};   // the Heavy holds a plate down on his own, whatever it asks; otherwise it takes that many of the others
+const trigOn3=(s,t)=>{const b=bpBat(s);return t==='pl'?weight3(s)>=PLATE3:t==='oc'?s.cp===0:t==='lb'?s.cp===1:t==='ob'?!!(b&&b.c===1):false};   // charged batteries do nothing for now, so the top-left and right doorways have no trigger
+const occ3=(s,t)=>PAIR3[t].some(k=>ROLES.some(r=>s.p[r].h===k));
+const locked3=(s,t)=>trigOn3(s,t)&&occ3(s,t);   // like the drains in level 2: while a life stands in the open gates, whatever holds them open cannot be changed
+const LOCK3='Unable: a lifeform is in the gate.';
+function doorOpen3(s,k){const t=GATEOF3[k];return !!t&&(trigOn3(s,t)||occ3(s,t))}
+const BODY={C:.8,E:.8,S:.8,H:1.5};   // how wide each character is: the Heavy is much bigger than the other three
+const NAR3='4,-2',NARTH=1.45,narHW=(t,s)=>(s&&s.p2&&s.p2.done?3.6:NARTH)+Math.max(0,Math.abs(t)-1.5)*.8;   // solving puzzle two is the prize: the pass widens so the Heavy fits   // a pass that narrows towards the middle of the tile (where the top-right lava was)
+const NAR1='-3,5';   // level one: two tiles right of the plate in the bottom-left grotto, the dry channel is a narrow pass too
+const narInfo=s=>s.lv===3?{room:NAR3,d:2,open:terr3(NAR3,s)==='land'}:s.lv===2?null:{room:NAR1,d:0,open:!WET(terr(NAR1,s))&&terr(NAR1,s)!=='mount'};
+const narOK=(role,x,y,d)=>{const ux=NX[d],uy=NY[d],t=x*ux+y*uy,w=-x*uy+y*ux;return Math.abs(w)+BODY[role]<=narHW(t,S)};
+function terr3(k,s){if(!k)return'void';if(L3CRACK.has(k)&&!(s&&s.sm&&s.sm[k]))return'crack';if(s&&PZL3.includes(k)&&pzOn3(s))return'lava';if(s&&s.p2l&&s.p2l[k])return'lava';if(L3MOUNT.has(k)||k.split(',').reduce((m,v,i,a)=>Math.max(m,Math.abs(+v),Math.abs(+a[0]+ +a[1])),0)>=5)return'mount';   // the whole outer ring is mountain
+ {const wq=PLS3.find(q=>q.wet&&q.lv.includes(k));if(wq)return(s&&coolTile3(s,k))?'land':'lake'}   // water that its plate drains
+ if(L3CRACK.has(k))return(s&&s.sm&&s.sm[k])?'land':'crack';if(L3LAVA.has(k))return LP3.includes(k)?((s&&coolTile3(s,k))?coolTo3(k):(L3GATE.has(k)?'sgate':'lava')):'lava';if(L3WATER.has(k))return'lake';if(k===SG3)return(s&&s.pz&&s.pz.done)?'land':'sgate';if(GATEOF3[k]==='ob')return(s&&trigOn3(s,'ob'))?'land':'lake';   // ordinary water the Navigator can swim; only the lime battery in the port drains it
+ if(GATEOF3[k])return(s&&doorOpen3(s,k))?'land':'lava';return'land'}
+function canEnter3(s,role,from,to){if(!to)return false;const t=terr3(to,s);if(t==='mount'||t==='sgate'||t==='lava'||t==='crack')return false;if(t==='lake')return role==='S';return true}
+function newState3(){return{lv:3,ph:'play',t:0,won:false,
+ p:{C:{h:'0,0',x:0,y:2.5,cy:null},E:{h:'0,0',x:-2.5,y:.5,cy:null,ce:[]},H:{h:'0,0',x:2.5,y:.5,cy:null},S:{h:'0,0',x:0,y:.5,cy:null}},
+ bt:[{h:B3.o,x:0,y:0,c:0,at:null},{h:B3L,x:0,y:0,c:1,at:null},{h:B3.e,x:0,y:0,c:-1,at:null}],ks:{h:KS3.h,x:0,y:0,at:null},fc3:-1,cp3:[false,false,false,false],tc:-1,pz:newPz3(),p2:newP2(),pch:null,p2l:{},cp:-1,sm:{},b:[],ch:[],pw3:0,hear:{C:[],E:[],H:[],S:[]},rad:[],vis:{C:['0,0'],E:['0,0'],H:['0,0'],S:['0,0']},pr:{},msgs:[],mid:0,names:{},on:{}}}
+const cn3=c=>c===1?'lime':'orange';
+const carry3=(s,role)=>{if(role==='E'){const n=(s.p.E.ce||[]).length;return n?'Carrying: '+n+' '+cn3(s.p.E.ce[0])+' charge'+(n>1?'s':''):null}if(role==='H'){if(hk3(s))return'Carrying: the keystone';const b=s.bt.find(b=>b.at==='H');return b?'Carrying: a battery'+(b.c>=0?' ('+cn3(b.c)+' charge)':' (empty)'):null}return null};
+const bpLock3=s=>locked3(s,'ob');   // the lime battery holds the water gone: it cannot come out while a life is in the drained tiles
+const cpLock3=s=>s.cp>=0&&(s.cp===0?locked3(s,'oc'):locked3(s,'lb'));
+function action3(s,role){if(role!=='E'&&role!=='H')return null;const p=s.p[role],here=p.h,dist=(x,y)=>Math.hypot(p.x-x,p.y-y);const cand=[];
+ const bpos=b=>b.at==='bp'?(here==='0,0'?BTS3:null):(b.at===null&&b.h===here?[b.x,b.y]:null);
+ if(role==='E'){const ce=p.ce||(p.ce=[]);const hold=ce.length?ce[0]:-1;
+  {const z=s.p2,pc=s.pch;   // the lime charge goes into one of the left terminal's six round ports; after an attempt it waits in the middle for the Engineer to take it back
+   if(here===T2.e&&hold===1&&z.sel.L<0){let bi=-1,bd=9;for(let i=0;i<6;i++){const d=dist(P2POS[i][0],P2POS[i][1]);if(d<bd){bd=d;bi=i}}
+    if(bd<=2.8)cand.push({d:bd,t:'Put the charge into this port',f:()=>{ce.pop();s.pch={h:here,x:P2POS[bi][0],y:P2POS[bi][1],at:null,port:bi};z.sel.L=bi}})}
+   if(pc&&pc.h===here&&(hold<0||hold===1)){const d=dist(pc.x,pc.y);if(d<=3.8)cand.push({d,t:'Take the charge',f:()=>{ce.push(1);s.pch=null;if(here===T2.e&&z.sel.L>=0)z.sel.L=-1}})}}
+  s.bt.forEach(b=>{const q=bpos(b);if(!q)return;const d=dist(q[0],q[1]);if(d>3.8)return;
+   if(b.c>=0&&(hold<0||hold===b.c))cand.push({d,t:'Take the '+cn3(b.c)+' charge out of the battery',f:()=>{if(b.at==='bp'&&bpLock3(s)){note(LOCK3,['E']);return}ce.push(b.c);b.c=-1}});
+   else if(b.c<0&&ce.length)cand.push({d,t:'Pour your '+cn3(hold)+' charge into the battery',f:()=>{b.c=ce.pop()}})});
+  if(here==='0,0'){const d=dist(CHS3[0],CHS3[1]);if(d<=3.8){if(s.cp>=0&&(hold<0||hold===s.cp))cand.push({d,t:'Take the '+cn3(s.cp)+' charge from the charge port',f:()=>{if(cpLock3(s)){note(LOCK3,['E']);return}if(s.cp===0&&!s.p2.done)resetP2();ce.push(s.cp);s.cp=-1}});else if(s.cp<0&&ce.length)cand.push({d,t:'Pour your '+cn3(hold)+' charge into the charge port',f:()=>{s.cp=ce.pop()}})}}
+  if(here===FC3){const d=dist(0,0);if(d<=4.2){if(s.fc3>=0&&(hold<0||hold===s.fc3))cand.push({d,t:'Take the '+cn3(s.fc3)+' charge out of the crystal',f:()=>{ce.push(s.fc3);s.fc3=-1}});else if(s.fc3<0&&hold===0)cand.push({d,t:'Pour your '+cn3(hold)+' charge into the crystal',f:()=>{s.fc3=ce.pop();note('The crystal glows.',null)}})}}   // the ending tile: a charge in the crystal and all four plates held at once
+  if(here===TERM3.e){const d=dist(TSLOT3[0],TSLOT3[1]);if(d<=3.8){if(s.tc>=0&&(hold<0||hold===s.tc))cand.push({d,t:'Take the '+cn3(s.tc)+' charge out of the terminal',f:()=>{const was=s.tc;ce.push(s.tc);s.tc=-1;if(was===0&&!s.pz.done){if(s.pz.n)note('The charge is gone. The terminals reset.',ROLES);s.pz=newPz3()}}});else if(s.tc<0&&ce.length)cand.push({d,t:'Pour your '+cn3(hold)+' charge into the terminal',f:()=>{if(hold===0&&!s.pz.done&&pzLock3(s)){note(LOCK3,['E']);return}s.tc=ce.pop()}})}}
+  if(cand.length){cand.sort((a,b)=>a.d-b.d);return cand[0]}return null}
+ if(role==='H'&&!(hk3(s)&&here===T2.h&&s.p2.sel.B<0&&P2POS.some(q=>dist(q[0],q[1])<=2.8))){for(let k=0;k<6;k++){const n=nb(here,k);if(n&&L3CRACK.has(n)&&!(s.sm&&s.sm[n])&&p.x*NX[k]+p.y*NY[k]>=A-4.5)return{t:'Smash the cracked mountain',f:()=>{(s.sm||(s.sm={}))[n]=true;note('The rock shatters.',null)}}}}
+ // the Heavy carries one thing at a time: a battery or the keystone
+ const hk=hk3(s);if(hk){if(here===TERM3.h&&!p2On(s)){let bi=-1,bd=9;for(let i=0;i<6;i++){const q=sockXY(i),d=dist(q[0],q[1]);if(d<bd){bd=d;bi=i}}
+   if(bd<=2.6)return{t:'Place the keystone on this square',f:()=>{const z=s.pz,i=bi;{const k=hk,q=sockXY(i);k.at=null;k.h=here;k.x=q[0];k.y=q[1]}if(!pzOn3(s))return;if(i===pzAns3(z)){const n=z.n+1;if(n>=KSNEED){s.pz=newPz3(n,true);s.pz.fl={i,ok:1,t:s.t};note('The terminals accept the sequence.',ROLES)}else{s.pz=newPz3(n);s.pz.fl={i,ok:1,t:s.t};note('Correct. '+n+' of '+KSNEED+'.',ROLES)}}else{s.pz=newPz3(0);s.pz.fl={i,ok:0,t:s.t};note('Wrong. The terminals reset.',ROLES)}}}}
+  if(here===T2.h&&s.p2.sel.B<0){let bi=-1,bd=9;for(let i=0;i<6;i++){const d=dist(P2POS[i][0],P2POS[i][1]);if(d<bd){bd=d;bi=i}}
+   if(bd<=2.8)return{t:'Press the keystone onto this port',f:()=>{const k=hk,q=P2POS[bi];k.at=null;k.h=here;k.x=q[0];k.y=q[1];k.port=bi;s.p2.sel.B=bi}}}
+  return{t:'Put the keystone down',f:()=>{const k=hk;k.at=null;k.h=here;k.x=Math.max(-6,Math.min(6,p.x));k.y=Math.max(-6,Math.min(6,p.y+1.4))}}}
+ KSS3(s).forEach(k=>{if(k.at===null&&k.h===here){const d=dist(k.x,k.y);if(d<=3.8&&!s.bt.some(b=>b.at==='H'))cand.push({d,t:'Pick up the keystone',f:()=>{k.at='H';delete k.port;if(here===T2.h)s.p2.sel.B=-1}})}});
+ const held=s.bt.find(b=>b.at==='H');
+ if(held){if(here==='0,0'&&!bpBat(s)&&dist(BTS3[0],BTS3[1])<=3.8)return{t:'Set the battery into the battery port',f:()=>{held.at='bp';held.h='0,0'}};
+  return{t:'Put the battery down',f:()=>{held.at=null;held.h=here;held.x=Math.max(-6,Math.min(6,p.x));held.y=Math.max(-6,Math.min(6,p.y+1.4))}}}
+ s.bt.forEach(b=>{const q=bpos(b);if(!q)return;const d=dist(q[0],q[1]);if(d<=3.8)cand.push({d,t:b.at==='bp'?'Lift the battery out of the port':'Pick up the battery',f:()=>{if(b.at==='bp'&&bpLock3(s)){note(LOCK3,['H']);return}b.at='H'}})});
+ if(cand.length){cand.sort((a,b)=>a.d-b.d);return cand[0]}return null}
+function tick3(dt){
+ actWatch('p1',pzOn3(S));actWatch('p2',p2On(S));
+ // whoever holds a plate cannot walk off while a life is in the gates (centre plate) or on the lava (plate at 5,-4) it opens
+ const was={},was2={};ROLES.forEach(r=>{const q=S.p[r];was[r]=onPlate3(S,r)?{h:q.h,x:q.x,y:q.y}:null;was2[r]=PLS3.map(pl=>onPl(S,pl,r)?{h:q.h,x:q.x,y:q.y}:null)});const lk=locked3(S,'pl');
+ ROLES.forEach(r=>moveRole(r,dt));
+ const back=(r,w,msg)=>{const q=S.p[r];q.h=w.h;q.x=w.x;q.y=w.y;if(!S.nt)S.nt={};if(!(S.t-(S.nt[r]||-9)<2)){S.nt[r]=S.t;note(msg,[r])}};
+ if(lk)ROLES.forEach(r=>{if(was[r]&&!onPlate3(S,r))back(r,was[r],LOCK3)});
+ PLS3.forEach((pl,i)=>{if(lvOcc(S,pl)&&!plSat(S,pl))ROLES.forEach(r=>{if(was2[r][i]&&!onPl(S,pl,r))back(r,was2[r][i],pl.wet?'Unable: a lifeform is in the water.':'Unable: a lifeform is in the gate.')})});   // the lava only stays cool while the plate stays held, so nobody can step off it onto the lava and leave the rest short
+ const pl=S.p;S.bt.forEach(b=>{if(b.at==='H'){b.h=pl.H.h;b.x=pl.H.x;b.y=pl.H.y}});KSS3(S).forEach(k=>{if(k.at==='H'){k.h=pl.H.h;k.x=pl.H.x;k.y=pl.H.y}});
+ S.pw3=weight3(S);tickP2(dt);
+ S.cp3=CPL2.map(([x,y])=>ROLES.some(r=>pl[r].h===FC3&&Math.hypot(pl[r].x-x,pl[r].y-y)<=PLR));if(!S.won&&S.fc3===0&&S.cp3.every(Boolean)){S.won=true;S.ph='won'}
+ const H={C:[],E:[],H:[],S:[]};
+ ROLES.forEach(a=>ROLES.forEach(b=>{if(a!==b&&pl[a].h===pl[b].h)H[a].push(b)}));
+ S.rad=rays(S);S.rad.forEach(h=>{if(h)h.r.forEach(r=>{if(!H.C.includes(r))H.C.push(r);if(!H[r].includes('C'))H[r].push('C')})});
+ S.hear=H;
+ ROLES.forEach(r=>{const a=action(S,r);S.pr[r]=a?{t:a.t,u:!!a.f}:null});
+ S.t+=dt}
+
+/* ============================== RENDER ============================== */
+const FIMG={};   // role -> loaded face Image (drawn marker faces)
+function setFaces(f){f=f||{};ROLES.forEach(r=>{const u=f[r];if(!u){delete FIMG[r];return}if(FIMG[r]&&FIMG[r]._u===u)return;const im=new Image();im._u=u;im.onload=()=>{FIMG[r]=im};im.src=u})}
+const TCOL={lava:'#9a3412',rock:'#7a7266',land:'#4a4062',bed:'#6b5843',lake:'#2b6cb0',river:'#1f5d9c',sunk:'#1c4a2c',island:'#4f7a2a',ship:'#3b3f4a',pod:'#545b66',sgate:'#6d6888',mount:'#24212c',cliff:'#14111c',shallow:'#62b4e6',grass:'#3f8f46',narrow:'#5a4f78',crack:'#14111c',void:'#08070c'};
+const TNAME={lava:'Lava',rock:'Cooled stone',land:'Moon surface',bed:'Dry riverbed',lake:'Lake',river:'River',sunk:'Submerged island',island:'Island',ship:'Ship',pod:'Escape pod',sgate:'Stone gate',mount:'Mountain',cliff:'Rock wall',shallow:'Shallow water',grass:'Fresh grass',narrow:'Narrow gap',crack:'Cracked mountain'};
+const RP={};   // render positions per role
+const hvAnchor=r=>[r.x,r.y-3.9+Math.sin(RPframe*.12)*.2];   // where the Heavy holds what he carries: high over his head
+const heavyCarrying=s=>s.lv===3?(s.bt.some(b=>b.at==='H')||!!hk3(s)):s.lv===2?!!(s.bt.cr||s.ks.carry>=0):s.p.H.cy!=null;
+function rpos(role,p){let r=RP[role];if(!r||r.h!==p.h){r=RP[role]={h:p.h,x:p.x,y:p.y}}else{r.x+=(p.x-r.x)*.35;r.y+=(p.y-r.y)*.35}return r}
+let RPframe=0;
+function hexPath(ctx,cx,cy,rad){ctx.beginPath();for(let i=0;i<6;i++){const a=(60*i-30)*Math.PI/180;const x=cx+rad*Math.cos(a),y=cy+rad*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath()}
+function wrapText(ctx,t,x,y,mw,lh){const w=t.split(' ');let line='',yy=y;for(const word of w){const tt=line?line+' '+word:word;if(ctx.measureText(tt).width>mw&&line){ctx.fillText(line,x,yy);line=word;yy+=lh}else line=tt}if(line)ctx.fillText(line,x,yy);return yy}
+function drawShape(ctx,X,Y,sc,dp,idx,x,y,z,fill,stroke){ctx.beginPath();
+ if(idx===0){ctx.moveTo(X(x),Y(y-z));ctx.lineTo(X(x+z*.95),Y(y+z*.8));ctx.lineTo(X(x-z*.95),Y(y+z*.8));ctx.closePath()}
+ else if(idx===1){ctx.rect(X(x-z*.85),Y(y-z*.85),z*1.7*sc,z*1.7*sc)}
+ else if(idx===2){ctx.arc(X(x),Y(y),z*.95*sc,0,7)}
+ else if(idx===3){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?z*.45:z;const px=X(x+Math.cos(a)*rr),py=Y(y+Math.sin(a)*rr);i?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.closePath()}
+ else if(idx===4){ctx.moveTo(X(x),Y(y-z));ctx.lineTo(X(x+z*.8),Y(y));ctx.lineTo(X(x),Y(y+z));ctx.lineTo(X(x-z*.8),Y(y));ctx.closePath()}
+ else{const t=z*.34;[[-t,-z],[t,-z],[t,-t],[z,-t],[z,t],[t,t],[t,z],[-t,z],[-t,t],[-z,t],[-z,-t],[-t,-t]].forEach(([a,b],i)=>i?ctx.lineTo(X(x+a),Y(y+b)):ctx.moveTo(X(x+a),Y(y+b)));ctx.closePath()}
+ ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=2*dp;ctx.stroke()}
+function gateBar(ctx,X,Y,sc,dp,n,y,t){t=t||3;const w=1.8,g=2.1,x00=-(t*g-.3)/2;for(let i=0;i<t;i++){const x0=x00+i*g;ctx.fillStyle=i<n?'#5cc28a':'rgba(255,255,255,.12)';ctx.fillRect(X(x0),Y(y),w*sc,1*sc);ctx.strokeStyle='#cfc8e6';ctx.lineWidth=1.5*dp;ctx.strokeRect(X(x0),Y(y),w*sc,1*sc)}}
+function drawRoom(cv,role,opt){opt=opt||{};const s=S;if(s&&s.pc)Object.assign(RC,s.pc);const ctx=cv.getContext('2d');const W=cv.width,Hh=cv.height,dp=cv._dpr||1;
+ ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0d0b14';ctx.fillRect(0,0,W,Hh);if(!s)return;
+ const p=s.p[role],room=p.h,f=flags(s);
+ const hudTop=34*dp,hudBot=(opt.mobile?150:56)*dp;
+ const sc=Math.min(W/(2*A+9),(Hh-hudTop-hudBot)/(2*RR+6));const cx=W/2,cy=hudTop+(Hh-hudTop-hudBot)/2;
+ const X=x=>cx+x*sc,Y=y=>cy+y*sc;
+ // neighbour strips
+ for(let k=0;k<6;k++){const n=nb(room,k);const a1=ANG[k]-Math.PI/6,a2=ANG[k]+Math.PI/6;
+  const v1=[RR*Math.cos(a1),RR*Math.sin(a1)],v2=[RR*Math.cos(a2),RR*Math.sin(a2)],o=3.2;
+  ctx.beginPath();ctx.moveTo(X(v1[0]),Y(v1[1]));ctx.lineTo(X(v2[0]),Y(v2[1]));ctx.lineTo(X(v2[0]+NX[k]*o),Y(v2[1]+NY[k]*o));ctx.lineTo(X(v1[0]+NX[k]*o),Y(v1[1]+NY[k]*o));ctx.closePath();
+  const t=terr(n,s);ctx.fillStyle=t==='crack'?'rgba(255,92,120,'+(.4+.5*(.5+.5*Math.sin(RPframe*.08)))+')':TCOL[t];ctx.globalAlpha=t==='crack'?1:.55;ctx.fill();ctx.globalAlpha=1;
+  if(t==='crack'){const pu=.5+.5*Math.sin(RPframe*.08);ctx.save();ctx.strokeStyle='rgba(255,92,120,'+(.3+.7*pu)+')';ctx.lineWidth=3.5*dp;ctx.shadowColor='#ff5c78';ctx.shadowBlur=(2+14*pu)*dp;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#3a0a18';
+   const mx=(v1[0]+v2[0])/2+NX[k]*1.6,my=(v1[1]+v2[1])/2+NY[k]*1.6;ctx.lineWidth=2.5*dp;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(X(mx-1.8),Y(my-1.2));ctx.lineTo(X(mx-.5),Y(my+.2));ctx.lineTo(X(mx-.9),Y(my+.9));ctx.lineTo(X(mx+.5),Y(my-.1));ctx.lineTo(X(mx+.1),Y(my-.8));ctx.lineTo(X(mx+1.8),Y(my+1.1));ctx.stroke();ctx.restore()}
+  else if(t==='mount'||t==='cliff'||t==='crack'){ctx.strokeStyle=t!=='mount'?'#5a5470':'#8a8499';ctx.lineWidth=1.5*dp;const mx=(v1[0]+v2[0])/2+NX[k]*1.6,my=(v1[1]+v2[1])/2+NY[k]*1.6;
+   ctx.beginPath();ctx.moveTo(X(mx-1.6),Y(my+.8));ctx.lineTo(X(mx-.4),Y(my-1));ctx.lineTo(X(mx+.4),Y(my+.2));ctx.lineTo(X(mx+1),Y(my-.5));ctx.lineTo(X(mx+1.8),Y(my+.8));ctx.stroke()}}
+ // room
+ const t=terr(room,s);hexPath(ctx,cx,cy,RR*sc);ctx.fillStyle=TCOL[t];ctx.fill();
+ if(t==='bed'){ctx.strokeStyle='rgba(30,20,10,.45)';ctx.lineWidth=1*dp;for(let i=0;i<7;i++){const a=i*0.9,r1=2+i%3*2;ctx.beginPath();ctx.moveTo(X(Math.cos(a)*r1),Y(Math.sin(a)*r1));ctx.lineTo(X(Math.cos(a+.4)*(r1+3)),Y(Math.sin(a+.4)*(r1+3)));ctx.stroke()}}
+ if(WET(t)){ctx.strokeStyle='rgba(181,212,244,.25)';ctx.lineWidth=1.5*dp;for(let i=-2;i<=2;i++){ctx.beginPath();for(let x=-7;x<=7;x+=.5){const yy=i*3+Math.sin(x*1.2+RPframe*.05+i)*.4;x===-7?ctx.moveTo(X(x),Y(yy)):ctx.lineTo(X(x),Y(yy))}ctx.stroke()}}
+ if(t==='sunk'){hexPath(ctx,cx,cy,RR*.45*sc);ctx.strokeStyle='rgba(151,196,89,.5)';ctx.setLineDash([4*dp,4*dp]);ctx.stroke();ctx.setLineDash([])}
+ // edges
+ for(let k=0;k<6;k++){const n=nb(room,k);const a1=ANG[k]-Math.PI/6,a2=ANG[k]+Math.PI/6;
+  const v1=[RR*Math.cos(a1),RR*Math.sin(a1)],v2=[RR*Math.cos(a2),RR*Math.sin(a2)];
+  const open=canEnter(s,role,room,n,f);ctx.beginPath();ctx.moveTo(X(v1[0]),Y(v1[1]));ctx.lineTo(X(v2[0]),Y(v2[1]));
+  if(open){ctx.strokeStyle='rgba(255,255,255,.28)';ctx.lineWidth=1.5*dp;ctx.setLineDash([5*dp,6*dp]);ctx.stroke();ctx.setLineDash([])}
+  else{ctx.strokeStyle='#cfc8e6';ctx.lineWidth=Math.max(3,.55*sc);ctx.stroke()}}
+ const label=(tx,x,y,col,sz)=>{ctx.font=`600 ${Math.round((sz||.9)*sc)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=col||'#fff';ctx.fillText(tx,X(x),Y(y))};
+ const charge=(x,y,on,r)=>{r=r||1.3;ctx.beginPath();ctx.arc(X(x),Y(y),r*sc,0,7);if(on){const cc=typeof on==='string'?on:'#ffb347';ctx.fillStyle=cc;ctx.shadowColor=cc;ctx.shadowBlur=12*dp;ctx.fill();ctx.shadowBlur=0}else{ctx.strokeStyle='#f4f1ea';ctx.lineWidth=2*dp;ctx.setLineDash([3*dp,3*dp]);ctx.stroke();ctx.setLineDash([])}};
+ // objects
+ {const ni=narInfo(s);if(ni&&room===ni.room&&ni.open)drawNarrow(ctx,s,X,Y,sc,dp,ni.d)}
+ if(s.lv===3){drawObjects3(ctx,s,room,role,X,Y,sc,dp,label,charge)}else if(s.lv===2){drawObjects2(ctx,s,room,role,X,Y,sc,dp,label,charge)}else{
+ if(room===DOCK){ctx.strokeStyle=(()=>{const i=s.b.findIndex((b,i)=>b.sl==='dk'&&!b.cr&&chargeAt(s,'b'+i)!=null);return i>=0?holdCol(s,'b'+i):'#cfc8e6'})();ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(-1.5),Y(-.8),3*sc,4*sc);ctx.setLineDash([]);
+  0}
+ if(room===PORT){ctx.strokeStyle=(()=>{const i=s.b.findIndex((b,i)=>b.sl==='pt'&&!b.cr&&chargeAt(s,'b'+i)!=null);return i>=0?holdCol(s,'b'+i):'#cfc8e6'})();ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(-1.5),Y(-2),3*sc,4*sc);ctx.setLineDash([])}
+ if(room===FCRY){const on=chargeAt(s,'fc')!=null;ctx.beginPath();ctx.moveTo(X(0),Y(-3));ctx.lineTo(X(1.8),Y(0));ctx.lineTo(X(0),Y(3));ctx.lineTo(X(-1.8),Y(0));ctx.closePath();ctx.fillStyle=on?'#c7c1ff':'#4b4669';if(on){ctx.shadowColor='#c7c1ff';ctx.shadowBlur=18*dp}ctx.fill();ctx.shadowBlur=0;
+  CPL.forEach(([x,y],i)=>{ctx.beginPath();ctx.arc(X(x),Y(y),2.2*sc,0,7);ctx.fillStyle=s.cp[i]?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=s.cp[i]?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke()})}
+ if(room===SOCK){charge(0,0,holdCol(s,'sock'));0}
+ if(room===SGATE){0}
+ if(room===GRL){const on=s.gg;ctx.beginPath();ctx.arc(X(0),Y(0),3*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();
+  0}
+ if(room===DEVICE){ctx.fillStyle='#120f22';ctx.strokeStyle='#8f86ff';ctx.lineWidth=2*dp;ctx.fillRect(X(-5),Y(-6.5),10*sc,4*sc);ctx.strokeRect(X(-5),Y(-6.5),10*sc,4*sc);
+  if(s.da&&!s.sv){gateBar(ctx,X,Y,sc,dp,s.ep,-9.6,5);
+   if(s.ecl!=null){ctx.beginPath();ctx.arc(X(0),Y(-4.5),1.6*sc,0,7);ctx.fillStyle=COLORS[s.ecl].c;ctx.shadowColor=COLORS[s.ecl].c;ctx.shadowBlur=16*dp;ctx.fill();ctx.shadowBlur=0}}
+  charge(-4,2.5,holdCol(s,'d0'));charge(4,2.5,holdCol(s,'d1'))}
+ if(room===KEYP){ctx.fillStyle='#120f22';ctx.strokeStyle=s.da&&!s.sv?'#ffe27a':'#6d6888';ctx.lineWidth=2*dp;ctx.fillRect(X(-3),Y(-6),6*sc,5*sc);ctx.strokeRect(X(-3),Y(-6),6*sc,5*sc);
+  if(s.da&&!s.sv){gateBar(ctx,X,Y,sc,dp,s.ep,-9.6,5);
+   {const u=1.05;ISLORD.forEach(k=>{const[q,r]=P(k),dq=q-3.5,dr=r+4.5,cx2=1.732*u*(dq+dr/2),cy2=-3.5+1.5*u*dr;hexPath(ctx,X(cx2),Y(cy2),u*.92*sc);ctx.fillStyle=COLORS[s.eperm[ISLORD.indexOf(k)]].c;ctx.fill();ctx.strokeStyle='#8a84a3';ctx.lineWidth=1.5*dp;ctx.stroke()})}}}
+ if(ISL.has(room)){
+  if(!s.sv&&s.da){gateBar(ctx,X,Y,sc,dp,s.ep,-9.6,5);
+   {const on=s.p.S.h===room&&Math.hypot(s.p.S.x,s.p.S.y)<=PLR;ctx.beginPath();ctx.arc(X(0),Y(0),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(221,216,238,.28)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#ddd8ee';ctx.lineWidth=2*dp;ctx.stroke()}}
+  if(s.sv&&!s.lo){gateBar(ctx,X,Y,sc,dp,s.rd,-9.6);
+   {const done=s.sol&&s.wq.slice(0,s.wp).includes(s.bm[room]),on=s.p.S.h===room&&Math.hypot(s.p.S.x,s.p.S.y)<=PLR;   // a plate already pressed in this round goes dark
+    ctx.beginPath();ctx.arc(X(0),Y(0),PLR*sc,0,7);ctx.fillStyle=done?'rgba(0,0,0,.6)':on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=done?'#4a4660':on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();
+    drawShape(ctx,X,Y,sc,dp,s.bm[room],0,0,1.3,done?'#3a3650':s.sol?'#ffe27a':'rgba(255,255,255,.12)','#cfc8e6')}
+   const ox=0,oy=5.6;Object.entries(SLOTS).forEach(([sl,[x,y]])=>{const on=s.tg.includes(sl);const gx=ox+x*.26,gy=oy+y*.26;
+   ctx.fillStyle=on?'#ffb347':'rgba(255,255,255,.1)';ctx.fillRect(X(gx-.65),Y(gy-.65),1.3*sc,1.3*sc);label(sl,gx,gy,on?'#2a1600':'#cfc8e6',.5)});
+  }}
+ if(room===PUZZLE){
+  Object.entries(SLOTS).forEach(([sl,[x,y]])=>{ctx.strokeStyle=(()=>{const i=s.b.findIndex((b,i)=>b.sl===sl&&!b.cr&&chargeAt(s,'b'+i)!=null);return i>=0?holdCol(s,'b'+i):'#cfc8e6'})();ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(x-1.5),Y(y-2),3*sc,4*sc);ctx.setLineDash([]);label(sl,x,y,'rgba(207,200,230,.7)',1)});
+  ctx.fillStyle='#120f22';ctx.strokeStyle='#6d6888';ctx.lineWidth=2*dp;ctx.fillRect(X(-5),Y(-1.2),10*sc,3.2*sc);ctx.strokeRect(X(-5),Y(-1.2),10*sc,3.2*sc);
+  if(s.sv&&!s.lo){gateBar(ctx,X,Y,sc,dp,s.rd,-7.2);
+   if(s.sol)s.wn.forEach((n,i)=>{const x=(i-1)*2.8;label(String(n),x,.6,'#ffe27a',1.6)})}}
+ if(room===PANEL){const live=s.sv&&!s.lo;ctx.fillStyle='#120f22';ctx.strokeStyle=live?'#ffe27a':'#6d6888';ctx.lineWidth=2*dp;ctx.fillRect(X(-5),Y(-8.6),10*sc,3.4*sc);ctx.strokeRect(X(-5),Y(-8.6),10*sc,3.4*sc);
+  if(live){gateBar(ctx,X,Y,sc,dp,s.rd,-4.4);
+   if(s.sol){label(s.wd?'Great to Least':'Least to Great',0,-1.8,'#ffe27a',1.1);s.ws.forEach((sh,i)=>{const x=(i-1)*2.8;drawShape(ctx,X,Y,sc,dp,sh,x,-6.6,.8,'#ffe27a','#fff')})}}}
+ if(room===LGATE&&s.sv){gateBar(ctx,X,Y,sc,dp,s.lo?3:s.rd,-2.5)}
+ if(room===CRK1||room==='0,0'){const k=room==='0,0'?1:4,a1=ANG[k]-Math.PI/6,a2=ANG[k]+Math.PI/6;   // the ship door sits on the edge between the centre tile and the tile up-right of it
+  ctx.beginPath();ctx.moveTo(X(RR*Math.cos(a1)),Y(RR*Math.sin(a1)));ctx.lineTo(X(RR*Math.cos(a2)),Y(RR*Math.sin(a2)));ctx.strokeStyle=f.door?'#5cc28a':'#e2574c';ctx.lineWidth=.9*sc;ctx.stroke()}
+ if(room===L1P&&terr(room,s)==='land'){const on=!!s.pg;ctx.beginPath();ctx.arc(X(0),Y(0),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke()}
+ {const pi=room===CRK1?0:room===PL2?1:room===PL3?2:-1;
+  if(pi>=0&&(pi!==0||s.sm1)){const on=s.pp&&s.pp[pi];ctx.beginPath();ctx.arc(X(0),Y(0),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();
+   if(pi===2)for(let i=0;i<2;i++){ctx.beginPath();ctx.arc(X((i-.5)*1.6),Y(0),.45*sc,0,7);ctx.fillStyle=i<(s.pw||0)?'#5cc28a':'rgba(255,255,255,.18)';ctx.fill()}}}   // the Heavy plate needs weight 2: the Heavy alone, or two of the others
+ if(SHIP[room]){const n=s.pc||0;   // everyone inside the ship sees how many of the three plates are held, but not which
+  ctx.fillStyle='#120f22';ctx.strokeStyle=n===3?'#5cc28a':'#8f86ff';ctx.lineWidth=2*dp;ctx.fillRect(X(-4.5),Y(-9.4),9*sc,1.8*sc);ctx.strokeRect(X(-4.5),Y(-9.4),9*sc,1.8*sc);
+  for(let i=0;i<3;i++){ctx.fillStyle=i<n?'#5cc28a':'rgba(255,255,255,.18)';ctx.fillRect(X(-4+i*2.7),Y(-8.8),2.5*sc,.8*sc)}
+}
+ }
+ // batteries
+ s.b.forEach((b,i)=>{if(b.h!==room)return;let x=b.x,y=b.y;if(b.cr){const r=rpos('H',s.p.H);[x,y]=hvAnchor(r)}
+  const on=chargeAt(s,'b'+i)!=null;ctx.fillStyle=on?holdCol(s,'b'+i):'#8a877f';ctx.strokeStyle='#4a2a00';ctx.lineWidth=2*dp;ctx.fillRect(X(x-1),Y(y-1.5),2*sc,3*sc);ctx.strokeRect(X(x-1),Y(y-1.5),2*sc,3*sc);ctx.fillStyle='#4a2a00';ctx.fillRect(X(x-.4),Y(y-1.9),.8*sc,.4*sc);
+  if(on){ctx.fillStyle='#fff8';ctx.fillRect(X(x-.6),Y(y-1),1.2*sc,.4*sc)}});
+ // players
+ ROLES.forEach(r=>{const q=s.p[r];if(q.h!==room)return;const rp=rpos(r,q);
+  const cols=r==='E'?(s.lv===2?Array(Math.max(0,q.cn||0)).fill('#ffb347'):(q.ce||[]).map(id=>(s.lv===3?L3COL:CCOL)[id]||CCOL[0])):[],ec=cols[0]||null;   // the Engineer absorbs charges (any number of one colour): he pulses in that colour and one orb circles him per charge
+  const pu=.5+.5*Math.sin(RPframe*.14);
+  if(ec){const R0=(2.5+1.3*pu)*sc,g=ctx.createRadialGradient(X(rp.x),Y(rp.y),.8*sc,X(rp.x),Y(rp.y),R0);g.addColorStop(0,ec+'dd');g.addColorStop(1,ec+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(X(rp.x),Y(rp.y),R0,0,7);ctx.fill();
+   cols.forEach((c,i)=>{const an=RPframe*.07+i*2*Math.PI/cols.length,rr=(1.95+.2*pu)*sc;ctx.beginPath();ctx.arc(X(rp.x)+Math.cos(an)*rr,Y(rp.y)+Math.sin(an)*rr,.36*sc,0,7);ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=10*dp;ctx.fill();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(X(rp.x)+Math.cos(an)*rr,Y(rp.y)+Math.sin(an)*rr,.16*sc,0,7);ctx.fillStyle='#fff';ctx.fill()})}
+  const lift=r==='H'&&heavyCarrying(s);
+  const sw=r==='S'&&WET(terr(q.h,s)),by=sw?Math.sin(RPframe*.15)*.2:0;
+  if(sw){   // the Navigator swims: ripples spread from him, his arms stroke alternately and he bobs on the water
+   for(let k=0;k<2;k++){const ph=(RPframe*.022+k*.5)%1;ctx.beginPath();ctx.ellipse(X(rp.x),Y(rp.y+.4),(1.5+2*ph)*sc,(.8+1*ph)*sc,0,0,7);ctx.strokeStyle='rgba(190,230,255,'+(.6*(1-ph)).toFixed(3)+')';ctx.lineWidth=2*dp;ctx.stroke()}
+   [-1,1].forEach(d=>{const a=Math.sin(RPframe*.2+(d>0?0:Math.PI));ctx.strokeStyle=RC[r];ctx.lineCap='round';ctx.lineWidth=.42*sc;ctx.beginPath();ctx.moveTo(X(rp.x+d*1.1),Y(rp.y+by));ctx.quadraticCurveTo(X(rp.x+d*(1.9+.3*a)),Y(rp.y+by-.9*a),X(rp.x+d*(2.3+.5*a)),Y(rp.y+by+.7*a));ctx.stroke();ctx.lineCap='butt'})}
+  if(lift){const[ax,ay]=hvAnchor(rp),st=.5+.5*Math.sin(RPframe*.12);   // the Heavy hoists what he carries high over his head with both arms; he braces under the weight
+   ctx.strokeStyle=RC[r];ctx.lineCap='round';ctx.lineWidth=.55*sc;[-1,1].forEach(d=>{ctx.beginPath();ctx.moveTo(X(rp.x+d*1.0),Y(rp.y-.2));ctx.lineTo(X(rp.x+d*1.55),Y(rp.y-1.6));ctx.lineTo(X(ax+d*.85),Y(ay+1.5));ctx.stroke()});ctx.lineCap='butt';
+   [-1,1].forEach(d=>{ctx.beginPath();ctx.arc(X(ax+d*.85),Y(ay+1.5),.38*sc,0,7);ctx.fillStyle='#fff';ctx.fill()})}
+  const bg=r==='H'?1.3:1;ctx.beginPath();ctx.ellipse(X(rp.x),Y(rp.y+by),(lift?1.4:1.25)*bg*sc,(lift?1.15:1.25)*bg*sc,0,0,7);ctx.fillStyle=RC[r];ctx.fill();
+  if(FIMG[r]&&FIMG[r].complete&&FIMG[r].naturalWidth){const fx=(lift?1.4:1.25)*bg*sc,fy=(lift?1.15:1.25)*bg*sc;ctx.save();ctx.clip();ctx.drawImage(FIMG[r],X(rp.x)-fx,Y(rp.y+by)-fy,fx*2,fy*2);ctx.restore()}
+  if(ec){ctx.beginPath();ctx.arc(X(rp.x),Y(rp.y),1.25*sc,0,7);ctx.fillStyle=ec;ctx.globalAlpha=.3+.4*pu;ctx.fill();ctx.fillStyle='#fff';ctx.globalAlpha=.25*pu;ctx.fill();ctx.globalAlpha=1}
+  ctx.beginPath();ctx.ellipse(X(rp.x),Y(rp.y+by),(lift?1.4:1.25)*bg*sc,(lift?1.15:1.25)*bg*sc,0,0,7);ctx.lineWidth=(r===role?3:1.5)*dp;ctx.strokeStyle='#fff';if(ec){ctx.shadowColor=ec;ctx.shadowBlur=(6+10*pu)*dp}ctx.stroke();ctx.shadowBlur=0;
+  label((s.names[r]||RN[r]),rp.x,lift?rp.y+2.3+(bg-1)*1.5:rp.y-2.1*bg,'#fff',.62);
+  if(r==='C'&&role==='C'&&s.rad){   // the Commander listens: sound waves curve around him toward every tile he hears someone on, in that crew member's colour
+   s.rad.forEach((h,d)=>{if(!h)return;const k=d,ang=Math.atan2(NY[k],NX[k]),ph=(RPframe*.03)%1;
+    for(let w=0;w<3;w++){const f=w+ph,rr=(2.1+f*.8)*sc,ser=Math.floor(RPframe*.03)-w;ctx.beginPath();ctx.arc(X(rp.x),Y(rp.y+by),rr,ang-.55,ang+.55);ctx.strokeStyle=RC[h.r[((ser%h.r.length)+h.r.length)%h.r.length]];ctx.globalAlpha=Math.max(0,.9-f*.3);ctx.lineWidth=2.4*dp;ctx.lineCap='round';ctx.stroke();ctx.lineCap='butt';ctx.globalAlpha=1}})}
+  if(r==='S'&&q.w){ctx.beginPath();ctx.arc(X(rp.x+1.3),Y(rp.y+1.3),.6*sc,0,7);ctx.fillStyle='#5aa9ff';ctx.fill()}
+  const b=BUB[r];if(b&&performance.now()-b.t<5000){ctx.font=`500 ${Math.round(.6*sc)}px system-ui`;const w=Math.min(ctx.measureText(b.tx).width+12*dp,W*.6);
+   ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(X(rp.x)-w/2,Y(rp.y-4.4),w,1.4*sc);ctx.fillStyle='#120f1f';ctx.textAlign='center';ctx.fillText(b.tx.slice(0,60),X(rp.x),Y(rp.y-3.7))}});
+ // HUD
+ ctx.textAlign='left';ctx.textBaseline='top';
+ const fs=Math.max(11,Math.min(15,W/dp/34))*dp;ctx.font=`700 ${fs}px system-ui`;ctx.fillStyle=RC[role];
+ const yTop=(opt.topPad||6)*dp;ctx.fillText((s.names[role]?s.names[role]+' · ':'')+RN[role]+(s.on&&s.on[role]===false?' (empty seat)':''),8*dp,yTop);
+ ctx.font=`500 ${fs*.9}px system-ui`;ctx.fillStyle='#cfc8e6';
+ let yy=yTop+fs*1.25;const hr=(s.hear[role]||[]);ctx.fillStyle=hr.length?'#8fe3b0':'#8a84a3';
+ ctx.fillText(hr.length?'Can hear: '+hr.map(r=>s.names[r]||RN[r]).join(', '):'Nobody can hear you',8*dp,yy);yy+=fs*1.2;
+ {const tn=TNAME[terr(s.p[role].h,s)]||'';if(tn){ctx.fillStyle='#b9b2d6';ctx.fillText('Standing on: '+tn,8*dp,yy);yy+=fs*1.2}}
+ const cy_=s.p[role].cy;let cr=null;if(s.lv===3){cr=carry3(s,role)}else if(s.lv===2){const q=s.p[role];cr=role==='E'?(q.cn>0?'Carrying: '+q.cn+' charge'+(q.cn>1?'s':''):null):role==='S'?(q.w?'Carrying: water':null):role==='H'?(s.bt&&s.bt.cr?'Carrying: a battery'+(s.bt.chg?' (charged)':''):null):null}else if(role==='E'&&(s.p.E.ce||[]).length)cr='Carrying: '+s.p.E.ce.length+' charge'+(s.p.E.ce.length>1?'s':'');else if(role!=='E'&&cy_!=null)cr='Carrying: a battery'+(chargeAt(s,'b'+cy_)!=null?' (charged)':'');if(cr){ctx.fillStyle='#ffd7a8';ctx.fillText(cr,8*dp,yy)}
+ // prompt
+ const pr=s.pr[role];if(pr&&s.ph==='play'&&!(pr.u&&/^(Pick up|Lift|Take|Put the (battery|charge|key ?stone) down)/.test(pr.t))){ctx.font=`600 ${fs}px system-ui`;ctx.textAlign='center';const msg=(pr.u&&!opt.mobile?'[E] ':'')+shortHint(pr.t);
+  const w=Math.min(ctx.measureText(msg).width+24*dp,W-16*dp);const by=Hh-hudBot+8*dp;ctx.fillStyle=pr.u?'rgba(143,134,255,.92)':'rgba(40,34,60,.92)';ctx.fillRect(W/2-w/2,by,w,fs*1.8);
+  ctx.fillStyle=pr.u?'#120f1f':'#e6e1f5';ctx.textBaseline='middle';ctx.save();ctx.beginPath();ctx.rect(W/2-w/2,by,w,fs*1.8);ctx.clip();ctx.fillText(msg,W/2,by+fs*.9);ctx.restore()}
+ // minimap / radar
+ const mw=Math.min(W*.30,170*dp),mh=mw;const mx0=W-mw-8*dp,my0=(opt.topPad||6)*dp+(opt.mapPad||0)*dp;
+ ctx.fillStyle='rgba(13,11,20,.78)';ctx.fillRect(mx0,my0,mw,mh);ctx.strokeStyle='#3a3350';ctx.lineWidth=1*dp;ctx.strokeRect(mx0,my0,mw,mh);
+ const ms=mw/(2*R*1.732+3)/1.0;const mcx=mx0+mw/2,mcy=my0+mh/2;
+ const hp=k=>{const[q,r]=P(k);return[mcx+ms*1.732*(q+r/2),mcy+ms*1.5*r]};
+ if(role==='C'){(s.vis.C||[]).forEach(k=>{   // the Commander's map works like everyone else's: it fills in as he explores; the line radar is drawn on top
+  const[x,y]=hp(k);hexPath(ctx,x,y,ms*.95);ctx.fillStyle=TCOL[terr(k,s)];ctx.fill()});
+  if(s.lv===2&&s.an.h){const[ax,ay]=hp(s.an.h);ctx.beginPath();ctx.arc(ax,ay,ms*.8,0,7);ctx.fillStyle='#ffd166';ctx.fill()}
+  {poisFor(s,room).forEach(k=>{const[x,y]=hp(k);ctx.beginPath();ctx.moveTo(x,y-ms*.9);ctx.lineTo(x+ms*.7,y);ctx.lineTo(x,y+ms*.9);ctx.lineTo(x-ms*.7,y);ctx.closePath();ctx.fillStyle='#ffd166';ctx.fill()});
+  }
+  const[sx,sy]=hp(s.p.C.h);(s.rad||[]).forEach((hit,d)=>{if(!hit)return;const[hx,hy]=hp(hit.k);ctx.strokeStyle='rgba(143,134,255,.7)';ctx.lineWidth=1.5*dp;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(hx,hy);ctx.stroke();
+   hit.r.forEach((r,i)=>{ctx.beginPath();ctx.arc(hx+i*ms*.7,hy,ms*.75,0,7);ctx.fillStyle=RC[r];ctx.fill()});ctx.font=`700 ${ms*1.3}px system-ui`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(hit.d,hx,hy-ms*.8)});
+  hexPath(ctx,sx,sy,ms*.95);ctx.strokeStyle='#fff';ctx.lineWidth=2*dp;ctx.stroke();
+  ctx.font=`600 ${Math.max(9,ms*1.1)}px system-ui`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#cfc8e6';ctx.fillText('Explored + radar',mx0+4*dp,my0+3*dp)}
+ else{const inT=false;(inT?CELLS:(s.vis[role]||[])).forEach(k=>{const[x,y]=hp(k);hexPath(ctx,x,y,ms*.95);ctx.fillStyle=inT?(SHIP[k]?'#6b7080':'#1b1727'):TCOL[terr(k,s)];ctx.fill()});
+  poisFor(s,room).forEach(k=>{const[x,y]=hp(k);ctx.beginPath();ctx.moveTo(x,y-ms*.9);ctx.lineTo(x+ms*.7,y);ctx.lineTo(x,y+ms*.9);ctx.lineTo(x-ms*.7,y);ctx.closePath();ctx.fillStyle='#ffd166';ctx.fill()});
+  const[x,y]=hp(room);hexPath(ctx,x,y,ms*.95);ctx.strokeStyle='#fff';ctx.lineWidth=2*dp;ctx.stroke();
+  ctx.font=`600 ${Math.max(9,ms*1.1)}px system-ui`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#cfc8e6';ctx.fillText('Explored',mx0+4*dp,my0+3*dp)}
+ if(opt.ctl){ctx.strokeStyle=RC[role];ctx.lineWidth=4*dp;ctx.strokeRect(2*dp,2*dp,W-4*dp,Hh-4*dp)}
+ if(s.ph==='won'){ctx.fillStyle='rgba(13,11,20,.7)';ctx.fillRect(0,Hh/2-30*dp,W,60*dp);ctx.font=`800 ${fs*1.6}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#8fe3b0';ctx.fillText(s.lv===3?'Level 3: Nexus complete!':s.lv===2?'Level 2: Waterways complete!':'Level 1: Come Together complete!',W/2,Hh/2)}}
+function drawMap(cv){const s=S;if(s&&s.pc)Object.assign(RC,s.pc);const ctx=cv.getContext('2d');const W=cv.width,Hh=cv.height,dp=cv._dpr||1;ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0d0b14';ctx.fillRect(0,0,W,Hh);if(!s)return;
+ const ms=Math.min(W/(2*R*1.732+2.5),(Hh-50*dp)/(2*R*1.5+3));const cx=W/2,cy=Hh/2+16*dp;const hp=k=>{const[q,r]=P(k);return[cx+ms*1.732*(q+r/2),cy+ms*1.5*r]};const f=flags(s);
+ CELLS.forEach(k=>{const[x,y]=hp(k);hexPath(ctx,x,y,ms*.97);ctx.fillStyle=TCOL[terr(k,s)];ctx.fill()});
+ const ic=(k,txt,col)=>{const[x,y]=hp(k);ctx.font=`700 ${ms*.55}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=col;ctx.fillText(txt,x,y+ms*.45)};
+ if(s.lv===3){[['3,-4','plate','#e6e1f5'],['4,-1','plate','#e6e1f5'],['-2,2','plates','#e6e1f5'],['0,0','hub','#e6e1f5'],[B3.o,'batt','#ffb347'],[B3L,'batt','#b6f23a'],[B3.e,'batt','#e6e1f5'],   // orange = puzzle one, lime = puzzle two, white = used by both
+  [TERM3.e,'term 1+2','#e6e1f5'],[TERM3.s,'term 1','#ffb347'],[TERM3.h,'term 1+2','#e6e1f5'],[T2.c,'term 2','#b6f23a'],[T2.h,'term 2','#b6f23a'],
+  ...KSS3(s).filter(k=>k.at===null).map(k=>[k.h,'key','#ff5c78']),[FC3,'crystal','#d9d3ff']].forEach(([k,n,c])=>ic(k,n,c))}else if(s.lv===2){[[L2.d1,'drain 1','#ffd7a8'],[L2.d2,'drain 2','#d9d3ff'],[L2.d3,'drain 3','#9fd0ff'],[L2.dp,'door plate','#e6f3c8'],[L2.tm,'terminal','#ffd7a8'],[L2.scr,'screen','#9fd0ff'],[KR,'key terminal','#ffe27a'],[KTL,'screen','#ffb347'],[KTR,'screen','#8fe3b0'],[FC2,'crystal','#d9d3ff'],[L2.d4,'drain 4','#ffd7a8'],[L2.p4,'plate 4','#e6f3c8']].forEach(([k,n,c])=>ic(k,n,c))}
+ else{
+ ic(PORT,'port'+(shipPowered(s)?'*':''),'#ffd7a8');ic(FCRY,'crystal'+(chargeAt(s,'fc')!=null?'*':''),'#d9d3ff');ic(SOCK,'socket'+(chargeAt(s,'sock')!=null?'*':''),'#ffd7a8');
+ ic(DEVICE,'device','#ffe27a');ic(ISLAND,'island','#e6f3c8');ic(PUZZLE,'array','#d6f0b8');ic(KEYP,'keypad','#ffd7a8');ic(PANEL,'panel','#ffd7a8');ic(GRL,'plate','#e6e1f5');ic(PL2,'plate','#e6e1f5');ic(PL3,'heavy plate','#ffb0a8');ic(CRK1,s.sm1?'plate':'cracked','#ffb0a8');CRK1S.forEach(k=>{if(!(s.cs&&s.cs[k]))ic(k,'cracked','#ffb0a8')});ic(SGATE,f.sgOpen?'open':'gate','#e6e1f5');ic(L1G,f.pgOpen?'open':'gate','#e6e1f5');ic(L1P,'plate','#e6e1f5');
+ s.b.forEach((b,i)=>{const[x,y]=hp(b.h);ctx.fillStyle=chargeAt(s,'b'+i)!=null?holdCol(s,'b'+i):'#8a877f';ctx.fillRect(x+ms*.25,y-ms*.7,ms*.3,ms*.45)});
+ }
+ ROLES.forEach((r,i)=>{const[x,y]=hp(s.p[r].h);const ox=(i%2-.5)*ms*.6,oy=((i>>1)-.5)*ms*.6-ms*.1;ctx.beginPath();ctx.arc(x+ox,y+oy,ms*.32,0,7);ctx.fillStyle=RC[r];ctx.fill();ctx.font=`800 ${ms*.38}px system-ui`;ctx.fillStyle='#120f1f';});
+ const[sx,sy]=hp(s.p.C.h);(s.rad||[]).forEach(hit=>{if(!hit)return;const[hx,hy]=hp(hit.k);ctx.strokeStyle='rgba(143,134,255,.8)';ctx.setLineDash([6*dp,5*dp]);ctx.lineWidth=2*dp;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(hx,hy);ctx.stroke();ctx.setLineDash([])});
+ ctx.font=`600 ${13*dp}px system-ui`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#cfc8e6';
+ const st=[`Time ${Math.floor(s.t/60)}:${String(Math.floor(s.t%60)).padStart(2,'0')}`];st.forEach((t,i)=>ctx.fillText(t,8*dp,(44+i*18)*dp))}
+
+/* ----- Level 2 drawing ----- */
+function drawObjects2(ctx,s,room,role,X,Y,sc,dp,label,charge){
+ const dn=room===L2.d1?1:room===L2.d2?2:room===L2.d3?3:(room===L2.d4||room===L2.p4)?4:0;
+ if(dn){
+  // the drain's shape: just the tiles it dries, laid out as on the map. Blue = ready, green = running, red = another drain is running, amber = waiting for someone to step off.
+  const col=s.blk===dn?'#ffd166':s.act===dn?'#5cc28a':(s.act&&s.act!==dn)?'#e2574c':'#5aa9ff';
+  const tiles=wetTiles(s).filter(k=>L2GRP[k].includes(dn));
+  const pts=tiles.map(k=>{const[q,r]=P(k);return[1.732*(q+r/2),1.5*r]});
+  const x0=Math.min(...pts.map(a=>a[0])),x1=Math.max(...pts.map(a=>a[0])),y0=Math.min(...pts.map(a=>a[1])),y1=Math.max(...pts.map(a=>a[1]));
+  const u=Math.min(1.1,13/(x1-x0+2),6/(y1-y0+2));const cx=(x0+x1)/2,cy=(y0+y1)/2;
+  ctx.fillStyle='#120f22';ctx.strokeStyle=s.blk===dn?'#ffd166':s.act===dn?'#5cc28a':'#8f86ff';ctx.lineWidth=2*dp;ctx.fillRect(X(-8),Y(-9.4),16*sc,8.4*sc);ctx.strokeRect(X(-8),Y(-9.4),16*sc,8.4*sc);
+  pts.forEach(([x,y])=>{hexPath(ctx,X((x-cx)*u),Y(-5.2+(y-cy)*u),u*.98*sc);ctx.fillStyle=col;ctx.globalAlpha=.85;ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#120f22';ctx.lineWidth=1.5*dp;ctx.stroke()});
+  if(dn===2){ctx.beginPath();ctx.arc(X(SOCK2[0]),Y(SOCK2[1]),PLR*sc,0,7);ctx.fillStyle=s.wt>=2?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=s.wt>=2?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();
+   for(let i=0;i<2;i++){ctx.beginPath();ctx.arc(X(SOCK2[0]+(i-.5)*1.6),Y(SOCK2[1]),.45*sc,0,7);ctx.fillStyle=i<s.wt?'#5cc28a':'rgba(255,255,255,.18)';ctx.fill()}}
+  else if(dn===1)charge(SOCK2[0],SOCK2[1],s.c1,1.4);
+  else if(dn===4){   // two places work this drain: a plate (left bar) and a charge socket (right bar). Both must glow.
+   [[-7.6,(s.w4||0)>=1],[6.4,!!s.c4]].forEach(([x,on])=>{ctx.fillStyle=on?'#5cc28a':'rgba(255,255,255,.12)';ctx.fillRect(X(x),Y(-9),1.2*sc,7.6*sc);ctx.strokeStyle='#cfc8e6';ctx.lineWidth=1.5*dp;ctx.strokeRect(X(x),Y(-9),1.2*sc,7.6*sc)});
+   if(room===L2.p4){const on=(s.w4||0)>=1;ctx.beginPath();ctx.arc(X(SOCK2[0]),Y(SOCK2[1]),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke()}
+   else charge(SOCK2[0],SOCK2[1],s.c4,1.4)}
+  else{ctx.strokeStyle=(s.bt.sl&&s.bt.chg&&s.bt.h===room)?'#ffb347':'#cfc8e6';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(SOCK2[0]-1.5),Y(SOCK2[1]-2),3*sc,4*sc);ctx.setLineDash([])}}
+ if(room===L2.rd){ctx.strokeStyle=(s.bt.rs&&s.bt.chg&&s.bt.h===room)?'#ffb347':'#cfc8e6';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(SOCK2[0]-1.5),Y(SOCK2[1]-2),3*sc,4*sc);ctx.setLineDash([])}
+ if(room===L2.ant){const x=0,y=1;ctx.strokeStyle=s.ac?'#ffd166':'#8a84a3';ctx.lineWidth=2.5*dp;ctx.beginPath();ctx.moveTo(X(x),Y(y+1.5));ctx.lineTo(X(x),Y(y-2));ctx.stroke();ctx.beginPath();ctx.arc(X(x),Y(y-2.4),.55*sc,0,7);ctx.fillStyle=s.ac?'#ffd166':'#4b4669';ctx.fill();charge(0,3.5,s.ac,1.1)}
+ {const bt=s.bt;if(bt.h===room&&(bt.cr||!underWater(s,room))){let x=bt.x,y=bt.y;if(bt.cr){const r=rpos('H',s.p.H);[x,y]=hvAnchor(r)}
+  ctx.fillStyle=bt.chg?'#ffb347':'#8a877f';ctx.strokeStyle='#4a2a00';ctx.lineWidth=2*dp;ctx.fillRect(X(x-1),Y(y-1.5),2*sc,3*sc);ctx.strokeRect(X(x-1),Y(y-1.5),2*sc,3*sc);ctx.fillStyle='#4a2a00';ctx.fillRect(X(x-.4),Y(y-1.9),.8*sc,.4*sc);if(bt.chg){ctx.fillStyle='#fff8';ctx.fillRect(X(x-.6),Y(y-1),1.2*sc,.4*sc)}}}
+ if(room===L2.dp&&terr2(room,s)==='bed'){ctx.beginPath();ctx.arc(X(DPOS[0]),Y(DPOS[1]),PLR*sc,0,7);ctx.fillStyle=s.dw>=2?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=s.dw>=2?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();
+  for(let i=0;i<2;i++){ctx.beginPath();ctx.arc(X(DPOS[0]+(i-.5)*1.6),Y(DPOS[1]),.45*sc,0,7);ctx.fillStyle=i<s.dw?'#5cc28a':'rgba(255,255,255,.18)';ctx.fill()}}
+ {const pz=s.pz,pi=PL7.indexOf(room),isT=room===L2.tm,isS=room===L2.scr;
+  if(pi>=0){const on=s.tc&&(pz.pr||[]).includes(pi),dw=s.tc&&(pz.dw[pi]||0)>0;ctx.beginPath();ctx.arc(X(0),Y(0),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.5)':dw?'rgba(255,209,102,.4)':s.tc?'rgba(255,255,255,.10)':'rgba(255,255,255,.04)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':dw?'#ffd166':s.tc?'#b9b2d6':'#5d5877';ctx.lineWidth=2*dp;ctx.stroke()}
+  if(isT||isS){const dy=isT?5.2:0;   // the Engineer-side terminal screen sits in the middle of its room
+   const pts=PL7.map(k=>{const[q,r]=P(k);return[1.732*(q+r/2),1.5*r]});
+   const x0=Math.min(...pts.map(a=>a[0])),x1=Math.max(...pts.map(a=>a[0])),y0=Math.min(...pts.map(a=>a[1])),y1=Math.max(...pts.map(a=>a[1]));
+   const u=Math.min(1.1,13/(x1-x0+2),6/(y1-y0+2));const cx=(x0+x1)/2,cy=(y0+y1)/2;
+   {ctx.fillStyle='#120f22';ctx.strokeStyle=!s.tc?'#5d5877':pz.done?'#5cc28a':'#8f86ff';ctx.lineWidth=2*dp;ctx.fillRect(X(-8),Y(-9.4+dy),16*sc,8.4*sc);ctx.strokeRect(X(-8),Y(-9.4+dy),16*sc,8.4*sc);
+   const CL=['#5aa9ff','#ffd166','#ff8fc2'];
+   pts.forEach(([x,y],i)=>{let col='#2a2640',tx='';
+    if(s.tc){if(isS){for(let j=0;j<3;j++)if(pz.sol[j].includes(i)){col=j<pz.st?'#3d7a5a':CL[j];tx=String(j+1)}}else if((pz.pr||[]).includes(i))col='#5cc28a'}
+    hexPath(ctx,X((x-cx)*u),Y(-5.2+dy+(y-cy)*u),u*.98*sc);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='#120f22';ctx.lineWidth=1.5*dp;ctx.stroke();
+    if(tx){ctx.fillStyle='#120f22';ctx.font='800 '+(1.3*sc)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tx,X((x-cx)*u),Y(-5.2+dy+(y-cy)*u))}});
+   if(!s.tc){ctx.fillStyle='#8a84a3';ctx.font='700 '+(.9*sc)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('NO SIGNAL',X(0),Y(-8.5+dy))}
+   else for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(X((j-1)*1.2),Y(-8.5+dy),.4*sc,0,7);ctx.fillStyle=j<pz.st?'#5cc28a':'rgba(255,255,255,.2)';ctx.fill()}
+   }
+   if(isT)charge(TSOCK[0],TSOCK[1],s.tc,1.4)}}
+ if(room===FC2){const on=!!s.fcc;ctx.beginPath();ctx.moveTo(X(0),Y(-3));ctx.lineTo(X(1.8),Y(0));ctx.lineTo(X(0),Y(3));ctx.lineTo(X(-1.8),Y(0));ctx.closePath();ctx.fillStyle=on?'#c7c1ff':'#4b4669';if(on){ctx.shadowColor='#c7c1ff';ctx.shadowBlur=18*dp}ctx.fill();ctx.shadowBlur=0;
+  CPL2.forEach(([x,y],i)=>{ctx.beginPath();ctx.arc(X(x),Y(y),PLR*sc,0,7);ctx.fillStyle=s.cp2[i]?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=s.cp2[i]?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke()})}
+ {const ks=s.ks,pz=s.pz;
+  const txt=(t,x,y,sz,col)=>{ctx.fillStyle=col;ctx.font='800 '+(sz*sc)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,X(x),Y(y))};
+  const scr=(x,y,w,h)=>{ctx.fillStyle='#120f22';ctx.strokeStyle=!ks.on?'#5d5877':ks.done?'#5cc28a':'#8f86ff';ctx.lineWidth=2*dp;ctx.fillRect(X(x),Y(y),w*sc,h*sc);ctx.strokeRect(X(x),Y(y),w*sc,h*sc)};
+  {
+   if(room===KR){   // the Heavy's terminal: one letter, a 4 x 4 grid, a socket for the charged battery
+    scr(-3.6,-10.2,7.2,3.8);if(ks.on)txt(ks.t,0,-8.3,3,'#ffe27a');else txt('OFF',0,-8.3,1.4,'#8a84a3');
+    for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(X(-2.4+i*1.2),Y(-6.9),.28*sc,0,7);ctx.fillStyle=i<ks.n?'#5cc28a':'rgba(255,255,255,.2)';ctx.fill()}
+    ctx.strokeStyle=ks.on?'#b9b2d6':'#5d5877';ctx.lineWidth=1.5*dp;
+    for(let i=0;i<=4;i++){ctx.beginPath();ctx.moveTo(X(KGX+i*KC),Y(KGY));ctx.lineTo(X(KGX+i*KC),Y(KGY+4*KC));ctx.stroke();ctx.beginPath();ctx.moveTo(X(KGX),Y(KGY+i*KC));ctx.lineTo(X(KGX+4*KC),Y(KGY+i*KC));ctx.stroke()}
+    if(ks.lp){ctx.fillStyle=ks.lp[2]?'rgba(92,194,138,.35)':'rgba(226,87,76,.35)';ctx.fillRect(X(KGX+ks.lp[0]*KC),Y(KGY+ks.lp[1]*KC),KC*sc,KC*sc)}
+    {ctx.strokeStyle=(s.bt.ts&&s.bt.chg)?'#ffb347':'#cfc8e6';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(KSOCK[0]-1.5),Y(KSOCK[1]-2),3*sc,4*sc);ctx.setLineDash([])}}
+   if(room===KTL){scr(-3.5,-5,7,10);if(ks.on)ks.ec.forEach((l,i)=>txt(l,0,-3.5+i*2.3,2.3,'#ffb347'));else txt('NO SIGNAL',0,0,.9,'#8a84a3')}   // the Engineer's screen: four letters top to bottom, the height
+   if(room===KTR){scr(-8,-2.5,16,5);if(ks.on)ks.dc.forEach((l,i)=>txt(l,-4.8+i*3.2,0,3,'#8fe3b0'));else txt('NO SIGNAL',0,0,1.2,'#8a84a3')}}   // the Diver's screen: four letters left to right, the width   // this is the same screen as the plate puzzle: while the battery is in the key terminal it shows the Engineer's letters
+  ks.st.forEach((q,i)=>{if(q.h!==room)return;const held=ks.carry===i;if(!held&&!q.pl&&underWater(s,room))return;let x=q.x,y=q.y;if(held){const r=rpos('H',s.p.H);[x,y]=hvAnchor(r)}
+   ctx.fillStyle=q.pl?'#d94a64':'#ff5c78';ctx.strokeStyle='#3a0a18';ctx.lineWidth=2*dp;ctx.fillRect(X(x-1.1),Y(y-1.1),2.2*sc,2.2*sc);ctx.strokeRect(X(x-1.1),Y(y-1.1),2.2*sc,2.2*sc)})}
+}
+
+function drawNarrow(ctx,s,X,Y,sc,dp,d){ctx.save();hexPath(ctx,X(0),Y(0),RR*sc);ctx.clip();   // rock walls leave a pass that gets tighter towards the middle
+  const ux=NX[d],uy=NY[d],vx=-uy,vy=ux;[-1,1].forEach(g=>{ctx.beginPath();const pts=[];for(let t=-12;t<=12.01;t+=.5)pts.push([t*ux+g*narHW(t,s)*vx,t*uy+g*narHW(t,s)*vy]);pts.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));
+   ctx.lineTo(X(12*ux+g*20*vx),Y(12*uy+g*20*vy));ctx.lineTo(X(-12*ux+g*20*vx),Y(-12*uy+g*20*vy));ctx.closePath();ctx.fillStyle='#5f5a74';ctx.fill();ctx.strokeStyle='#8a8499';ctx.lineWidth=2.5*dp;ctx.stroke()});ctx.restore()}
+function drawObjects3(ctx,s,room,role,X,Y,sc,dp,label,charge){
+ const col=c=>L3COL[c]||L3COL[0];
+ if(room===FC3){const on=s.fc3>=0,cc=on?col(s.fc3):'#c7c1ff';ctx.beginPath();ctx.moveTo(X(0),Y(-3));ctx.lineTo(X(1.8),Y(0));ctx.lineTo(X(0),Y(3));ctx.lineTo(X(-1.8),Y(0));ctx.closePath();ctx.fillStyle=on?cc:'#4b4669';if(on){ctx.shadowColor=cc;ctx.shadowBlur=18*dp}ctx.fill();ctx.shadowBlur=0;
+  CPL2.forEach(([x,y],i)=>{const h=s.cp3&&s.cp3[i];ctx.beginPath();ctx.arc(X(x),Y(y),PLR*sc,0,7);ctx.fillStyle=h?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=h?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke()})}
+ const batt=(x,y,c)=>{ctx.fillStyle=c>=0?col(c):'#8a877f';ctx.strokeStyle='#2a2a10';ctx.lineWidth=2*dp;ctx.fillRect(X(x-1),Y(y-1.5),2*sc,3*sc);ctx.strokeRect(X(x-1),Y(y-1.5),2*sc,3*sc);ctx.fillStyle='#2a2a10';ctx.fillRect(X(x-.4),Y(y-1.9),.8*sc,.4*sc);if(c>=0){ctx.fillStyle='#fff8';ctx.fillRect(X(x-.6),Y(y-1),1.2*sc,.4*sc)}};
+ if(room==='0,0'){
+  const w=s.pw3||0,on=w>=PLATE3;ctx.beginPath();ctx.arc(X(PLT3[0]),Y(PLT3[1]),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();
+  for(let i=0;i<PLATE3;i++){ctx.beginPath();ctx.arc(X(PLT3[0]+(i-(PLATE3-1)/2)*1.1),Y(PLT3[1]),.4*sc,0,7);ctx.fillStyle=i<w?'#5cc28a':'rgba(255,255,255,.18)';ctx.fill()}
+  charge(CHS3[0],CHS3[1],s.cp>=0?col(s.cp):false,1.4);
+  const b=bpBat(s);ctx.strokeStyle=b&&b.c>=0?col(b.c):'#cfc8e6';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(BTS3[0]-1.5),Y(BTS3[1]-2),3*sc,4*sc);ctx.setLineDash([])}
+ PLS3.forEach(q=>{if(room!==q.r)return;const on=plSat(s,q),cnt=ROLES.filter(r=>onPl(s,q,r)).length,px=(q.pos||[0,0])[0],py=(q.pos||[0,0])[1];ctx.beginPath();ctx.arc(X(px),Y(py),PLR*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.45)':'rgba(255,255,255,.08)';ctx.fill();ctx.strokeStyle=on?'#5cc28a':'#9a93b5';ctx.lineWidth=2*dp;ctx.stroke();for(let i=0;i<(q.need>1?q.need:0);i++){ctx.beginPath();ctx.arc(X(px+(i-(q.need-1)/2)*1.2),Y(py),.4*sc,0,7);ctx.fillStyle=(on||i<cnt)?'#5cc28a':'rgba(255,255,255,.18)';ctx.fill()}})
+ // terminals
+ {const txt=(t,x,y,z,c)=>{ctx.fillStyle=c;ctx.font=`700 ${Math.round(z*sc)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,X(x),Y(y))};
+  const scr=(x,y,w,h,on)=>{ctx.fillStyle='#0b0916';ctx.strokeStyle=on?'#8fe3b0':'#5d5877';ctx.lineWidth=2*dp;ctx.fillRect(X(x),Y(y),w*sc,h*sc);ctx.strokeRect(X(x),Y(y),w*sc,h*sc)};
+  const pips=(x,y)=>{for(let i=0;i<KSNEED;i++){ctx.beginPath();ctx.arc(X(x+(i-(KSNEED-1)/2)*1.4),Y(y),.4*sc,0,7);ctx.fillStyle=i<s.pz.n||s.pz.done?'#5cc28a':'rgba(255,255,255,.2)';ctx.fill()}};
+  const shp=(i,x,y,r,c)=>{ctx.fillStyle=c;ctx.strokeStyle=c;ctx.lineWidth=.45*r*sc/1.2;ctx.beginPath();const R=r*sc,cx=X(x),cy=Y(y);
+   if(i===0){for(let k=0;k<3;k++){const a=(-90+120*k)*Math.PI/180;k?ctx.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)):ctx.moveTo(cx+R*Math.cos(a),cy+R*Math.sin(a))}ctx.closePath();ctx.fill()}
+   else if(i===1){ctx.arc(cx,cy,R*.9,0,7);ctx.fill()}
+   else if(i===2){ctx.fillRect(cx-R*.8,cy-R*.8,R*1.6,R*1.6)}
+   else if(i===3){ctx.moveTo(cx,cy-R);ctx.lineTo(cx+R*.8,cy);ctx.lineTo(cx,cy+R);ctx.lineTo(cx-R*.8,cy);ctx.closePath();ctx.fill()}
+   else if(i===4){for(let k=0;k<10;k++){const a=(-90+36*k)*Math.PI/180,rr=k%2?R*.45:R;k?ctx.lineTo(cx+rr*Math.cos(a),cy+rr*Math.sin(a)):ctx.moveTo(cx+rr*Math.cos(a),cy+rr*Math.sin(a))}ctx.closePath();ctx.fill()}
+   else{ctx.fillRect(cx-R*.3,cy-R,R*.6,R*2);ctx.fillRect(cx-R,cy-R*.3,R*2,R*.6)}};
+  const live=s.tc===0,live2=s.cp===0;
+  const pulse=(x,y,r)=>{const a=.35+.35*Math.sin(RPframe*.08);ctx.beginPath();ctx.arc(X(x),Y(y),r*sc,0,7);ctx.fillStyle=`rgba(182,242,58,${a})`;ctx.fill();ctx.strokeStyle='#b6f23a';ctx.lineWidth=2*dp;ctx.stroke()};
+  if(room===TERM3.e){charge(TSLOT3[0],TSLOT3[1],s.tc>=0?col(s.tc):false,1.4);if(!live2)scr(-4.5,-1.2,9,8.4,live);
+   if(live2){}else if(s.pz.done)txt('SOLVED',0,3,1.5,'#8fe3b0');else if(live){const cx=X(0),cy=Y(3),R=2.7*sc,d=s.pz.dir,rot=d*RPframe*.035;txt(String(s.pz.off),0,3,3.2,'#ffb347');
+    ctx.strokeStyle='#ffb347';ctx.fillStyle='#ffb347';ctx.lineWidth=.35*sc;ctx.lineCap='round';
+    for(let k=0;k<3;k++){const a0=rot+k*Math.PI*2/3,ae=a0+d*1.05;ctx.beginPath();ctx.arc(cx,cy,R,a0,ae,d<0);ctx.stroke();
+     const tx=-Math.sin(ae)*d,ty=Math.cos(ae)*d,px=cx+R*Math.cos(ae),py=cy+R*Math.sin(ae),hw=.55*sc;ctx.beginPath();ctx.moveTo(px+tx*hw*1.3,py+ty*hw*1.3);ctx.lineTo(px-tx*hw*.4+Math.cos(ae)*hw,py-ty*hw*.4+Math.sin(ae)*hw);ctx.lineTo(px-tx*hw*.4-Math.cos(ae)*hw,py-ty*hw*.4-Math.sin(ae)*hw);ctx.closePath();ctx.fill()}ctx.lineCap='butt';
+    pips(0,6.4)}else txt('NO SIGNAL',0,3,1,'#8a84a3')}
+  const p2k=P2ST.find(k=>P2ROOM[k]===room);   // puzzle two: which of the four stations this room is
+  if(p2k&&(live2||(room!==TERM3.e&&room!==TERM3.h))){const z=s.p2,k=p2k,fl=z.fl&&s.t-z.fl.t<1.4,lit=live2&&!z.done,word=P2WORD[k],item=k==='L'||k==='B';
+   if(word){const sy=item?-3.9:-1.3,sh=2.6,sw=2.4,isw=lit&&z.mode===word;   // only the screen of the round's word shows it; the item rooms keep their screen high so the charge or keystone can wait in the middle
+    scr(-sw,sy,sw*2,sh,isw);if(fl){ctx.strokeStyle=z.fl.ok?'#5cc28a':'#e2574c';ctx.lineWidth=4*dp;ctx.strokeRect(X(-sw),Y(sy),sw*2*sc,sh*sc)}
+    if(z.done)txt('SOLVED',0,sy+sh/2,1.1,'#8fe3b0');
+    else if(isw)txt(word,0,sy+sh*.38,word.length>5?1.0:1.3,'#c7c1ff');
+    if(lit){for(let q=0;q<P2NEED;q++){ctx.beginPath();ctx.arc(X((q-(P2NEED-1)/2)*1.0),Y(sy+sh-.55),.3*sc,0,7);ctx.fillStyle=q<z.n?'#5cc28a':'rgba(255,255,255,.2)';ctx.fill()}}
+    else if(!z.done)txt('NO SIGNAL',0,sy+sh/2,.8,'#8a84a3')}
+   for(let i=0;i<6;i++){const[x,y]=P2POS[i],ch=z.lay[k][i];
+    if(!item){const locked=z.sel[k]===i,dw=!locked&&z.dw[k][i]>0;   // the same colours as the level two terminal plates: yellow while charging, green when pressed
+     ctx.beginPath();ctx.arc(X(x),Y(y),P2R*sc,0,7);ctx.fillStyle=locked?'rgba(92,194,138,.5)':dw?'rgba(255,209,102,.4)':lit?'rgba(255,255,255,.10)':'rgba(255,255,255,.04)';ctx.fill();ctx.strokeStyle=locked?'#5cc28a':dw?'#ffd166':lit?'#b9b2d6':'#5d5877';ctx.lineWidth=2*dp;ctx.stroke()}
+    else if(k==='L'){const on=z.sel[k]===i;ctx.beginPath();ctx.arc(X(x),Y(y),1.5*sc,0,7);ctx.fillStyle=on?'rgba(92,194,138,.35)':'#0b0916';ctx.fill();ctx.strokeStyle=lit?'#cfc8e6':'#5d5877';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.stroke();ctx.setLineDash([])}
+    else{const on=z.sel[k]===i;ctx.fillStyle=on?'rgba(92,194,138,.35)':'#0b0916';ctx.fillRect(X(x-1.5),Y(y-1.5),3*sc,3*sc);ctx.strokeStyle=lit?'#cfc8e6':'#5d5877';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(x-1.5),Y(y-1.5),3*sc,3*sc);ctx.setLineDash([])}
+    if(!(item&&z.sel[k]===i))txt(ch,x,y,1.1,lit?'#e6e1f5':'#5d5877')}}
+  if(room===TERM3.s){scr(-4,-4,8,8,live);
+   if(s.pz.done)txt('SOLVED',0,0,1.5,'#8fe3b0');else if(live)shp(s.pz.sh,0,0,2.4,'#c7c1ff');else txt('NO SIGNAL',0,0,1,'#8a84a3')}
+  if(room===TERM3.h&&!live2){ctx.beginPath();ctx.arc(X(0),Y(0),(KSR+1.8)*sc,0,7);ctx.fillStyle=live?'rgba(143,227,176,.07)':'rgba(255,255,255,.04)';ctx.fill();ctx.strokeStyle=live?'#8fe3b0':'#5d5877';ctx.lineWidth=2*dp;ctx.stroke();
+   for(let i=0;i<6;i++){const[x,y]=sockXY(i),f=s.pz.fl&&s.pz.fl.i===i&&s.t-s.pz.fl.t<1.4;ctx.fillStyle=f?(s.pz.fl.ok?'rgba(92,194,138,.5)':'rgba(226,87,76,.5)'):'#0b0916';ctx.fillRect(X(x-1.5),Y(y-1.5),3*sc,3*sc);ctx.strokeStyle=live?'#cfc8e6':'#5d5877';ctx.lineWidth=2*dp;ctx.setLineDash([4*dp,3*dp]);ctx.strokeRect(X(x-1.5),Y(y-1.5),3*sc,3*sc);ctx.setLineDash([]);
+    shp(s.pz.ring[i],x,y,.85,live?'#c7c1ff':'#5d5877')}
+   if(s.pz.done)txt('SOLVED',0,0,1.3,'#8fe3b0');else if(live)pips(0,0);else txt('NO SIGNAL',0,0,.9,'#8a84a3')}
+  KSS3(s).forEach(k=>{if(k.at==='H'){if(s.p.H.h===room){const r=rpos('H',s.p.H),[x,y]=hvAnchor(r);keyd(x,y)}}else if(k.h===room)keyd(k.x,k.y)});
+  {const pc=s.pch;if(pc&&pc.h===room)charge(pc.x,pc.y,col(1),.9)}
+  {
+   const pk=P2ST.find(q=>P2ROOM[q]===room);if(pk&&(pk==='L'||pk==='B')&&s.p2.sel[pk]>=0){const[x,y]=P2POS[s.p2.sel[pk]];txt(s.p2.lay[pk][s.p2.sel[pk]],x,y,1.0,'#0b0916')}}   // the picked letter stays readable on top of the charge or keystone
+  function keyd(x,y){ctx.fillStyle='#ff5c78';ctx.strokeStyle='#3a0a18';ctx.lineWidth=2*dp;ctx.fillRect(X(x-1.1),Y(y-1.1),2.2*sc,2.2*sc);ctx.strokeRect(X(x-1.1),Y(y-1.1),2.2*sc,2.2*sc)}}
+ s.bt.forEach(b=>{let x,y;
+  if(b.at==='H'){if(s.p.H.h!==room)return;const r=rpos('H',s.p.H);[x,y]=hvAnchor(r)}
+  else if(b.at==='bp'){if(room!=='0,0')return;x=BTS3[0];y=BTS3[1]}
+  else{if(b.h!==room)return;x=b.x;y=b.y}
+  batt(x,y,b.c)})}
+
+/* ============================== APP / UI ============================== */
+const $=q=>document.querySelector(q);
+const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('#game').classList.remove('on');if(id==='game')$('#game').classList.add('on');else $('#'+id).classList.add('on')}
+let MODE=null;           // 'host' | 'client' | 'offline'
+let MYROLE=null;         // client role
+let SPEC=false;          // client: watching instead of playing
+const HR=()=>MODE==='host'?(ROLES.find(r=>SEATS[r]&&SEATS[r].host)||null):null;   // the role the host is playing, or null when the host is spectating
+const myRole=()=>MODE==='client'?MYROLE:HR();
+const PLAYING=()=>myRole()!=null;
+const spectating=()=>(MODE==='host'&&!HR())||(MODE==='client'&&SPEC);
+const seatOn=s=>!!(s&&(s.host||(CONNS[s.pid]&&CONNS[s.pid].open)));
+let VIEW='quad',CTRL='E';         // host/offline view
+let HEARALL=false,HDEAF=false;
+const BUB={};let seenMsg=0;
+const isTouch=matchMedia('(pointer:coarse)').matches;
+
+/* ----- views ----- */
+let CANV=[];
+function buildViews(){const v=$('#views');v.innerHTML='';CANV=[];v.className='';
+ v.style.top=PLAYING()?'0':'46px';let list;if(PLAYING())list=[myRole()];else if(VIEW==='quad'){v.className='quad';list=ROLES}else if(VIEW==='map')list=['map'];else list=[VIEW];
+ list.forEach(r=>{const c=document.createElement('canvas');c._role=r;v.appendChild(c);CANV.push(c)});sizeViews();
+ $('#ctrls').classList.toggle('on',isTouch&&controlledRole()!=null);buildTopbar()}
+function sizeViews(){const dp=Math.min(window.devicePixelRatio||1,2);CANV.forEach(c=>{const r=c.getBoundingClientRect();c._dpr=dp;c.width=Math.max(50,r.width*dp);c.height=Math.max(50,r.height*dp)})}
+addEventListener('resize',()=>{sizeViews()});
+function buildTopbar(){const tb=$('#topbar');tb.classList.toggle('client',PLAYING());if(PLAYING()){tb.innerHTML=`<button id="bHelp">?</button>`;$('#bHelp').onclick=helpOv;return}
+ const opts=[['quad','All 4'],['C','Commander'],['E','Engineer'],['H','Heavy'],['S','Navigator'],['map','Map']];
+ tb.innerHTML=opts.map(([v,t])=>`<button data-v="${v}" class="${VIEW===v?'sel':''}">${t}</button>`).join('')+(MODE!=='offline'?`<button id="bHearAll">${HEARALL?'Hearing: everyone':'Hearing: this view'}</button><button id="bDeaf">${HDEAF?'Deafened':'Deafen'}</button>`:'')+(VIEW==='quad'&&MODE!=='client'?`<span class="mut" style="align-self:center;font-size:12px">Drive:</span>`+ROLES.map((r,i)=>`<button data-c="${r}" class="${CTRL===r?'sel':''}">${i+1} ${RN[r]}</button>`).join(''):'')+`<button id="bHelp">?</button>`;
+ tb.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{CTRL=b.dataset.c;buildTopbar();buildViews()});
+ tb.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.v;buildViews();updateAudio()});
+ if($('#bDeaf'))$('#bDeaf').onclick=()=>{HDEAF=!HDEAF;buildTopbar();updateAudio()};if($('#bHearAll'))$('#bHearAll').onclick=()=>{HEARALL=!HEARALL;buildTopbar();updateAudio()};$('#bHelp').onclick=helpOv}
+function controlledRole(){if(MODE==='client')return MYROLE;if(HR())return HR();if(ROLES.includes(VIEW)&&S&&!(S.on&&S.on[VIEW]))return VIEW;if(VIEW==='quad'&&S&&!(S.on&&S.on[CTRL]))return CTRL;return null}
+function helpOv(){const r=controlledRole()||MYROLE;ov(`<div class="card col"><h1>How to play</h1>
+ ${r?`<div><b style="color:${RC[r]}">You: ${RN[r]}</b><br>${RDESC[r]}</div>`:''}
+ <div class="mut">Move: WASD / arrow keys, or the stick on a phone. Use things: E or Space, or the USE button. Text chat: press T (or the Chat button on a phone).</div>
+ <div>Each hexagon on the moon is a room. You only see the room you're in. You can hear anyone in the same room.</div>
+ <div class="mut">Roles: ${ROLES.map(x=>`<b style="color:${RC[x]}">${RN[x]}</b>: ${RDESC[x]}`).join('<br>')}</div>
+ <button class="pri" onclick="ovClose()">Got it</button></div>`)}
+function ov(h){const o=$('#ov');o.innerHTML=h;o.classList.add('on')}
+function ovClose(){$('#ov').classList.remove('on')}
+
+/* ----- frame loop ----- */
+function frame(){RPframe++;const mob=isTouch;
+ CANV.forEach(c=>{if(c._role==='map')drawMap(c);else drawRoom(c,c._role,{mobile:mob&&controlledRole()===c._role,topPad:6,mapPad:0,ctl:VIEW==='quad'&&MODE!=='client'&&!PLAYING()&&controlledRole()===c._role})});
+ // toasts
+ if(S&&S.msgs){S.msgs.forEach(m=>{if(m.id<=seenMsg)return;seenMsg=m.id;const me=myRole();if(m.to&&me&&!m.to.includes(me))return;toast(m.tx)})}
+ requestAnimationFrame(frame)}
+function toast(t,ms){const d=document.createElement('div');d.className='toast';d.textContent=t;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),ms||7000);while($('#toasts').children.length>4)$('#toasts').firstChild.remove()}
+
+/* ----- input ----- */
+const KEYS={};
+addEventListener('keydown',e=>{if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+ KEYS[e.key.toLowerCase()]=1;if(MODE!=='client'&&VIEW==='quad'&&'1234'.includes(e.key)&&e.key.length===1){CTRL=ROLES[+e.key-1];buildTopbar();buildViews()}if(['e',' ','enter'].includes(e.key.toLowerCase())&&!e.repeat){e.preventDefault();useAct()}
+ if(e.key.toLowerCase()==='t'&&PLAYING()&&MODE!=='offline'){e.preventDefault();toggleChat(true)}});
+addEventListener('keyup',e=>{KEYS[e.key.toLowerCase()]=0});
+let STICK={x:0,y:0},SPR=false;
+function keyVec(){let x=(KEYS.d||KEYS.arrowright?1:0)-(KEYS.a||KEYS.arrowleft?1:0),y=(KEYS.s||KEYS.arrowdown?1:0)-(KEYS.w||KEYS.arrowup?1:0);
+ if(Math.hypot(STICK.x,STICK.y)>.1){x=STICK.x;y=STICK.y}return{x,y}}
+function useAct(){const r=controlledRole();if(!r)return;if(MODE==='client')send({t:'act'});else doAct(r)}
+(function(){const st=$('#stick'),nub=$('#nub');let id=null;
+ const upd=e=>{const r=st.getBoundingClientRect();for(const t of e.changedTouches){if(t.identifier!==id)continue;let x=(t.clientX-r.left-r.width/2)/(r.width/2),y=(t.clientY-r.top-r.height/2)/(r.height/2);const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}
+  STICK={x,y};nub.style.left=(45+x*45)+'px';nub.style.top=(45+y*45)+'px'}};
+ st.addEventListener('touchstart',e=>{e.preventDefault();id=e.changedTouches[0].identifier;upd(e)},{passive:false});
+ st.addEventListener('touchmove',e=>{e.preventDefault();upd(e)},{passive:false});
+ const end=e=>{for(const t of e.changedTouches)if(t.identifier===id){id=null;STICK={x:0,y:0};nub.style.left='45px';nub.style.top='45px'}};
+ st.addEventListener('touchend',end);st.addEventListener('touchcancel',end);
+ const ab=$('#actb'),sOn=e=>{e.preventDefault();SPR=true;ab.style.background='rgba(64,200,160,.8)'},sOff=e=>{e.preventDefault();SPR=false;ab.style.background=''};   // the Navigator's big button is a hold-to-sprint SPRINT button
+ const press=e=>{e.preventDefault();if(controlledRole()==='S')sOn(e);else useAct()},rel=e=>{if(SPR)sOff(e)};
+ ab.addEventListener('touchstart',press,{passive:false});ab.addEventListener('touchend',rel,{passive:false});ab.addEventListener('touchcancel',rel,{passive:false});ab.addEventListener('mousedown',press);addEventListener('mouseup',()=>{if(SPR)sOff({preventDefault(){}})});
+ $('#prsb').addEventListener('touchstart',e=>{e.preventDefault();useAct()},{passive:false});$('#prsb').onclick=useAct})();
+// the action button is named for what it can do right now, and only shows when it can do something
+function actLabel(r,t){if(!t)return null;if(r==='E')return/^(Take|Pick|Lift)/.test(t)?'ABSORB':/^(Pour|Put|Set|Place)/.test(t)?'CHARGE':t.split(' ')[0].toUpperCase();
+ if(r==='H')return/^(Pick|Lift|Take)/.test(t)?'GRAB':/^(Put|Set|Place|Press the key)/.test(t)?'DROP':t.split(' ')[0].toUpperCase();return t.split(' ')[0].toUpperCase()}
+function syncActBtn(r){const ab=$('#actb'),pb=$('#prsb'),pr=r&&S&&S.pr&&S.ph==='play'?S.pr[r]:null,lab=pr&&pr.u?actLabel(r,pr.t):null;
+ if(r==='S'){ab.style.display='block';ab.textContent='SPRINT';pb.style.display=lab?'block':'none';pb.textContent=lab||''}
+ else{pb.style.display='none';ab.style.display=r==='C'||!lab?'none':'block';if(lab)ab.textContent=lab}}
+let lastIn={x:9,y:9},lastInT=0;
+setInterval(()=>{const r=controlledRole();syncActBtn(r);if(!r)return;const v=keyVec(),sp=r==='S'&&(!!KEYS.shift||SPR);   // Shift or the Sprint button, Navigator only
+ if(MODE==='client'){const now=performance.now();if(Math.abs(v.x-lastIn.x)>.02||Math.abs(v.y-lastIn.y)>.02||sp!==lastIn.sp||now-lastInT>400){send({t:'in',mx:v.x,my:v.y,sp});lastIn={x:v.x,y:v.y,sp};lastInT=now}}
+ else{ROLES.forEach(x=>{if(!(S&&S.on&&S.on[x]))IN[x]={mx:0,my:0}});IN[r]={mx:v.x,my:v.y,sp}}},50);
+// chat
+function toggleChat(on){const c=$('#chatin');c.classList.toggle('on',on);if(on)setTimeout(()=>$('#chatTxt').focus(),30)}
+$('#chatb').onclick=()=>toggleChat(!$('#chatin').classList.contains('on'));
+function doChat(role,tx){const to=[role,...(S.hear[role]||[])];bcast({t:'chat',f:role,x:tx,to});chatLine(role,tx,to)}
+function sendChat(){const t=$('#chatTxt').value.trim();if(!t)return;$('#chatTxt').value='';if(MODE==='host'){if(HR()&&S)doChat(HR(),t.slice(0,120))}else send({t:'chat',x:t});toggleChat(false)}
+$('#chatSend').onclick=sendChat;$('#chatTxt').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();if(e.key==='Escape')toggleChat(false)});
+function chatLine(from,tx,to){BUB[from]={tx,t:performance.now()};const d=document.createElement('div');
+ d.innerHTML=`<b style="color:${RC[from]}">${esc((S&&S.names[from])||RN[from])}:</b> ${esc(tx)}`+(spectating()?` <span class="mut">(heard by ${to.filter(x=>x!==from).map(x=>RN[x]).join(', ')||'nobody'})</span>`:'');
+ $('#chatlog').appendChild(d);while($('#chatlog').children.length>7)$('#chatlog').firstChild.remove();setTimeout(()=>d.remove(),45000)}
+
+/* ============================== NETWORK ============================== */
+const PeerCtor=()=>window.Peer||(window.peerjs&&window.peerjs.Peer);
+function loadPeer(){return new Promise(res=>{if(PeerCtor())return res(true);
+ const urls=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'];
+ const tryN=i=>{if(i>=urls.length)return res(false);const s=document.createElement('script');s.src=urls[i];s.onload=()=>PeerCtor()?res(true):tryN(i+1);s.onerror=()=>tryN(i+1);document.head.appendChild(s)};tryN(0)})}
+const PID=c=>'moonfall-game-'+c.toLowerCase();
+let CID=(()=>{let c=null;try{c=sessionStorage.getItem('mf-cid')}catch(e){}if(c)return c;c=Math.random().toString(36).slice(2,12);try{sessionStorage.setItem('mf-cid',c)}catch(e){}return c})();
+let PEER=null,HCONN=null,CODE='';
+const CONNS={};             // host: peerId -> conn
+const SEATS={C:null,E:null,H:null,S:null}; // host: role -> {cid,name,pid}
+const PLAYERS={};           // host: cid -> {cid,name,pid,role}
+let LOB=null;               // client: last lobby
+function netBanner(on,t){const b=$('#netb');b.textContent=t||'Connection lost — trying to reconnect…';b.style.display=on?'block':'none'}
+function send(m){if(MODE==='client'){try{if(HCONN&&HCONN.open)HCONN.send(m)}catch(e){}}}
+function bcast(m){Object.values(CONNS).forEach(c=>{try{if(c.open)c.send(m)}catch(e){}})}
+const rndCode=()=>Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.random()*31|0]).join('');
+
+/* ---------- audio ---------- */
+const PEEROPT={config:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:global.stun.twilio.com:3478']},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};   // STUN plus a public TURN relay, so computers and phones on different networks can still reach each other
+let MIC=null,ACTX=null,MICON=true;const AUD={};   // peerId -> audio element
+function silentStream(){ACTX=ACTX||new (window.AudioContext||window.webkitAudioContext)();const d=ACTX.createMediaStreamDestination();const o=ACTX.createOscillator();const g=ACTX.createGain();g.gain.value=0;o.connect(g);g.connect(d);o.start();return d.stream}
+async function getMic(){try{MIC=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});return true}catch(e){MIC=silentStream();return false}}
+function attachAudio(pid,stream){let a=AUD[pid];if(!a){a=document.createElement('audio');a.autoplay=true;a.playsInline=true;document.body.appendChild(a);AUD[pid]=a}
+ a.srcObject=stream;a.muted=true;a.play&&a.play().catch(()=>{});updateAudio()}
+function kickAudio(){try{if(ACTX&&ACTX.state==='suspended')ACTX.resume()}catch(e){}Object.values(AUD).forEach(a=>{if(a.paused&&a.srcObject)a.play&&a.play().catch(()=>{})})}
+['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,kickAudio,{passive:true}));setInterval(kickAudio,1500);   // desktop browsers may hold audio until the page has been clicked; keep nudging it
+function roleOfPid(pid){if(MODE==='host'){const p=Object.values(PLAYERS).find(p=>p.pid===pid);return p?p.role:null}
+ if(LOB){const e=Object.entries(LOB.seats).find(([r,v])=>v&&v.pid===pid);return e?e[0]:null}return null}
+function updateAudio(){if(!S){Object.values(AUD).forEach(a=>{if(a.muted)a.muted=false});return}   // in the lobby everyone hears everyone
+ Object.entries(AUD).forEach(([pid,a])=>{const r=roleOfPid(pid);let on=false;
+ if(PLAYING())on=!!r&&(S.hear[myRole()]||[]).includes(r);
+ else if(HDEAF)on=false;else if(HEARALL||!ROLES.includes(VIEW))on=!!r;else on=!!r&&(r===VIEW||(S.hear[VIEW]||[]).includes(r))
+ if(a.muted===on)a.muted=!on})}
+const CALLS={};
+function wireCall(c){CALLS[c.peer]=c;c.on('stream',st=>attachAudio(c.peer,st));c.on('close',()=>{delete CALLS[c.peer];if(AUD[c.peer]){AUD[c.peer].remove();delete AUD[c.peer]}});c.on('error',()=>{delete CALLS[c.peer]})}
+function syncCalls(){if(MODE!=='client'||!PEER||!PEER.id||!MIC||!LOB)return;
+ const hp=PID(CODE);if(!CALLS[hp]){try{wireCall(PEER.call(hp,MIC))}catch(e){}}
+ const ids=new Set([...(LOB.peers||[]),...Object.values(LOB.seats).filter(Boolean).map(v=>v.pid)]);   // everyone who is connected, seated or not, so the lobby chat includes people who have not picked a role yet
+ ids.forEach(pid=>{if(!pid||pid===PEER.id||CALLS[pid])return;if(PEER.id<pid){try{wireCall(PEER.call(pid,MIC))}catch(e){}}})}
+function toggleMic(){MICON=!MICON;if(MIC)MIC.getAudioTracks().forEach(t=>t.enabled=MICON);$('#micb').textContent=MICON?'Mic is on':'Mic is off';$('#lMicBtn').textContent=MICON?'Mic is on':'Mic is off'}
+$('#micb').onclick=toggleMic;$('#lMicBtn').onclick=toggleMic;
+
+
+/* ---------- lobby: draw your face ---------- */
+const FL=document.createElement('canvas');FL.width=FL.height=120;const FLX=FL.getContext('2d');
+let F_COL='#1b1b2a',F_ERASE=false,F_SIZE=5,F_HAS=false,F_ROLE=null,F_BODY='#8f86ff',F_NAME='',F_DOWN=false,F_LAST=null,F_SENT=null;
+try{const u=localStorage.getItem('mf-face');if(u){const im=new Image();im.onload=()=>{FLX.drawImage(im,0,0,120,120);F_HAS=true;faceDraw()};im.src=u}}catch(e){}
+const FCOLS=['#1b1b2a','#ffffff','#e63946','#ff9f1c','#ffd23f','#2a9d8f','#3a86ff','#8338ec','#ff6fa3'];
+function faceDraw(){const cv=$('#faceCv');if(!cv)return;const c=cv.getContext('2d'),W=cv.width;c.clearRect(0,0,W,W);
+ c.beginPath();c.arc(W/2,W/2,W/2-4,0,7);c.fillStyle=F_BODY;c.fill();
+ c.save();c.beginPath();c.arc(W/2,W/2,W/2-4,0,7);c.clip();c.drawImage(FL,0,0,W,W);c.restore();
+ c.beginPath();c.arc(W/2,W/2,W/2-4,0,7);c.lineWidth=4;c.strokeStyle='#fff';c.stroke()}
+function faceSend(){let u=null;if(F_HAS){try{u=FL.toDataURL('image/png')}catch(e){}}
+ try{if(u)localStorage.setItem('mf-face',u);else localStorage.removeItem('mf-face')}catch(e){}
+ if(u===F_SENT)return;F_SENT=u;if(MODE==='host'){HFACE=u;const r=HR();if(r){SEATS[r].face=u;bcast(facesPayload())}return}send({t:'face',d:u})}
+function faceUI(role,col,name){const box=$('#lFace'),vb=$('#lVoice');if(vb)vb.style.display=(MODE==='client'||MODE==='host')?'flex':'none';
+ if(!box)return;if(!role){box.style.display='none';F_ROLE=null;return}
+ box.style.display='flex';F_BODY=col||RC0[role];F_NAME=name;if(F_ROLE!==role){F_ROLE=role;F_SENT='';if(F_HAS)faceSend()}faceDraw()}
+(function(){const cv=$('#faceCv');if(!cv)return;
+ const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*120,(e.clientY-r.top)/r.height*120]};
+ const seg=(a,b)=>{FLX.globalCompositeOperation=F_ERASE?'destination-out':'source-over';FLX.strokeStyle=F_COL;FLX.fillStyle=F_COL;FLX.lineWidth=F_ERASE?F_SIZE*2.2:F_SIZE;FLX.lineCap=FLX.lineJoin='round';
+  FLX.beginPath();FLX.moveTo(a[0],a[1]);FLX.lineTo(b[0],b[1]);FLX.stroke();if(a[0]===b[0]&&a[1]===b[1]){FLX.beginPath();FLX.arc(a[0],a[1],(F_ERASE?F_SIZE*2.2:F_SIZE)/2,0,7);FLX.fill()}FLX.globalCompositeOperation='source-over';if(!F_ERASE)F_HAS=true;faceDraw()};
+ cv.addEventListener('pointerdown',e=>{e.preventDefault();F_DOWN=true;try{cv.setPointerCapture(e.pointerId)}catch(x){}F_LAST=pos(e);seg(F_LAST,F_LAST)});
+ cv.addEventListener('pointermove',e=>{if(!F_DOWN)return;e.preventDefault();const p=pos(e);seg(F_LAST,p);F_LAST=p});
+ const up=()=>{if(!F_DOWN)return;F_DOWN=false;if(F_ERASE){const d=FLX.getImageData(0,0,120,120).data;F_HAS=false;for(let i=3;i<d.length;i+=4)if(d[i]>8){F_HAS=true;break}}faceSend()};
+ cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+ $('#faceCols').innerHTML=FCOLS.map(c=>`<button data-c="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:2px solid rgba(255,255,255,.35);padding:0"></button>`).join('');
+ const mark=()=>{$('#fMark').classList.toggle('sel',!F_ERASE);$('#fErase').classList.toggle('sel',F_ERASE);$('#fSmall').classList.toggle('sel',F_SIZE<8);$('#fBig').classList.toggle('sel',F_SIZE>=8);
+  $('#faceCols').querySelectorAll('button').forEach(b=>b.style.borderColor=(!F_ERASE&&b.dataset.c===F_COL)?'#fff':'rgba(255,255,255,.35)')};
+ $('#faceCols').querySelectorAll('button').forEach(b=>b.onclick=()=>{F_COL=b.dataset.c;F_ERASE=false;mark()});
+ $('#fMark').onclick=()=>{F_ERASE=false;mark()};$('#fErase').onclick=()=>{F_ERASE=true;mark()};
+ $('#fSmall').onclick=()=>{F_SIZE=5;mark()};$('#fBig').onclick=()=>{F_SIZE=11;mark()};
+ $('#fClear').onclick=()=>{FLX.clearRect(0,0,120,120);F_HAS=false;faceDraw();faceSend()};
+ mark();faceDraw()})();
+
+/* ---------- host ---------- */
+function lobbyPayload(){const seats={};ROLES.forEach(r=>{const s=SEATS[r];seats[r]=s?{name:s.name,pid:s.pid,col:s.col,on:seatOn(s)}:null});return{t:'lob',seats,code:CODE,ph:S?S.ph:'lobby',spec:Object.values(PLAYERS).filter(p=>p.spec&&!p.role).map(p=>({pid:p.pid,name:p.name})),peers:Object.values(CONNS).filter(c=>c.open).map(c=>c.peer)}}
+function hostLobbyRender(){const L=lobbyPayload();renderRoles(L,HR()||'spec');$('#lCode').textContent=CODE;const link=location.origin+location.pathname+'?join='+CODE;$('#lLink').textContent=link;$('#bCopy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(link).then(()=>toastL('Link copied'))};
+ const n=ROLES.filter(r=>SEATS[r]).length;$('#bStart').style.display='block';$('#bStart').textContent=n===4?'Start game':`Start game (${n}/4 players — you can drive empty seats)`}
+function toastL(t){$('#lMsg').textContent=t;setTimeout(()=>{if($('#lMsg').textContent===t)$('#lMsg').textContent=''},2500)}
+function pickCol(c){if(MODE==='client')send({t:'col',c});else if(MODE==='host'&&!S){const r=HR();if(!r||!PAL.includes(c))return;const used=ROLES.filter(x=>x!==r&&SEATS[x]).map(x=>SEATS[x].col);if(used.includes(c))return;SEATS[r].col=c;hostSync()}}
+let HFACE=null;
+function hostPick(r){if(S)return;const cur=HR();if(r==='spec'){if(cur)SEATS[cur]=null;hostSync();return}
+ if(SEATS[r]&&!SEATS[r].host)return;if(cur)SEATS[cur]=null;SEATS[r]={cid:'host',host:true,name:'Host',pid:PID(CODE),col:freeCol(r,null),face:HFACE||null};hostSync()}
+function renderRoles(L,mine){const mr=mine&&mine!=='spec'?mine:null;faceUI(mr,mr&&L.seats[mr]?L.seats[mr].col:null,mr&&L.seats[mr]?L.seats[mr].name:'');
+ const specs=(L.spec||[]).map(x=>esc(x.name)).join(', ');
+ $('#lRoles').innerHTML=ROLES.map(r=>{const s=L.seats[r];return`<button class="role ${mine===r?'mine':''}" data-r="${r}">
+ <b style="color:${(s&&s.col)||RC0[r]}">${RN[r]}</b><small>${s?esc(s.name)+(s.on?'':' (offline)'):'Open'}</small><small>${RDESC[r]}</small></button>`}).join('')
+ +`<button class="role ${mine==='spec'?'mine':''}" data-r="spec" style="grid-column:1/-1"><b>Spectate</b><small>${specs?'Watching: '+specs:'Nobody yet'}</small><small>Watch all 4 views or switch between them, and hear everyone or just the view you are watching. You don't play a role.</small></button>`;
+ if(MODE!=='offline'){$('#lRoles').querySelectorAll('.role').forEach(b=>b.onclick=()=>{const r=b.dataset.r;if(MODE==='host')hostPick(r);else send(r==='spec'?{t:'spec'}:{t:'pick',r})});
+  const used=ROLES.filter(x=>x!==mr&&L.seats[x]).map(x=>L.seats[x].col);
+  if(mr)$('#lRoles').insertAdjacentHTML('beforeend',`<div id="lPal" style="grid-column:1/-1;display:flex;gap:8px;justify-content:center;margin-top:6px">${PAL.map(c=>`<button data-c="${c}" style="width:30px;height:30px;border-radius:50%;background:${c};border:${(L.seats[mr]&&L.seats[mr].col)===c?'3px solid #fff':'2px solid rgba(255,255,255,.25)'};opacity:${used.includes(c)?.25:1};padding:0"></button>`).join('')}</div>`);
+  const pal=$('#lPal');if(pal)pal.querySelectorAll('button').forEach(b=>b.onclick=()=>pickCol(b.dataset.c))}}
+async function startHost(){MODE='host';show('lobby');$('#lTitle').textContent='Your game';$('#lHostBox').style.display='flex';$('#lMic').textContent='Pick a role to play, or Spectate to watch everyone and switch between views.';
+ $('#lMsg').textContent='Connecting…';$('#lVoice').style.display='flex';await getMic();if(!await loadPeer()){$('#lMsg').textContent="Couldn't load the connection library (PeerJS). Check your internet and reload.";return}
+ CODE=rndCode();mkHostPeer();$('#bStart').onclick=hostBeginGame}
+const SEEN={};
+function mkHostPeer(){const old=PEER;PEER=null;try{if(old)old.destroy()}catch(e){}
+ const p=PEER=new (PeerCtor())(PID(CODE),PEEROPT);
+ p.on('open',()=>{if(PEER!==p)return;$('#lMsg').textContent='';if(!S)hostLobbyRender();else bcast(lobbyPayload())});
+ p.on('error',e=>{if(PEER!==p)return;
+  if(e.type==='unavailable-id'){if(S||HRESUMED)setTimeout(()=>{if(PEER===p)mkHostPeer()},2500);else{CODE=rndCode();mkHostPeer()}}
+  else if(e.type!=='peer-unavailable'){$('#lMsg').textContent='Connection problem: '+e.type+' — reconnecting…';setTimeout(()=>{if(PEER===p&&(p.destroyed||p.disconnected))hostFix()},3000)}});
+ p.on('disconnected',()=>{if(PEER===p)try{p.reconnect()}catch(e){}});
+ p.on('close',()=>{if(PEER===p)setTimeout(()=>{if(PEER===p)mkHostPeer()},1500)});
+ p.on('connection',c=>{c.on('open',()=>{CONNS[c.peer]=c;SEEN[c.peer]=Date.now();c.send(lobbyPayload());c.send(facesPayload())});c.on('data',d=>{SEEN[c.peer]=Date.now();hostRecv(c,d)});c.on('close',()=>{if(CONNS[c.peer]===c)delete CONNS[c.peer];hostDropped(c.peer)})});
+ p.on('call',call=>{call.answer(MIC||silentStream());wireCall(call)})}
+let HRESUMED=false;
+function hostFix(){if(MODE!=='host'||!PEER)return;if(PEER.destroyed)mkHostPeer();else if(PEER.disconnected)try{PEER.reconnect()}catch(e){}}
+setInterval(()=>{if(MODE!=='host')return;hostFix();const now=Date.now();Object.entries(CONNS).forEach(([pid,c])=>{if(now-(SEEN[pid]||now)>9000){try{c.close()}catch(e){}if(CONNS[pid]===c)delete CONNS[pid];hostDropped(pid)}});
+ if(S&&S.ph==='play'||S&&S.ph==='won'){try{localStorage.setItem('mf-host',JSON.stringify({code:CODE,t:now,lv:LVSEL,S,SEATS,PLAYERS}))}catch(e){}}},2000);
+function hostRecv(c,d){if(!d||!d.t)return;
+ if(d.t==='hello'){let p=PLAYERS[d.cid];if(!p)p=PLAYERS[d.cid]={cid:d.cid,role:null};p.name=String(d.name||'Player').slice(0,14);p.pid=c.peer;
+  if(p.role&&SEATS[p.role]&&SEATS[p.role].cid===p.cid)SEATS[p.role].pid=c.peer;hostSync();if(S)c.send({t:'go',role:p.role,spec:!p.role&&!!p.spec});return}
+ const p=Object.values(PLAYERS).find(p=>p.pid===c.peer);if(!p)return;
+ if(d.t==='face'){if(typeof d.d==='string'&&d.d.length<60000&&/^data:image\/png;base64,[A-Za-z0-9+\/=]*$/.test(d.d)){p.face=d.d;if(p.role&&SEATS[p.role]&&SEATS[p.role].cid===p.cid)SEATS[p.role].face=d.d;bcast(facesPayload())}else if(d.d===null){p.face=null;if(p.role&&SEATS[p.role]&&SEATS[p.role].cid===p.cid)SEATS[p.role].face=null;bcast(facesPayload())}return}   // your drawn face: a small PNG, kept on you and shown on your character
+ if(d.t==='spec'&&!(S&&p.role)){if(p.role&&SEATS[p.role]&&SEATS[p.role].cid===p.cid)SEATS[p.role]=null;p.role=null;p.spec=true;hostSync();if(S)c.send({t:'go',role:null,spec:true});return}
+ if(d.t==='col'&&p.role&&SEATS[p.role]&&PAL.includes(d.c)&&!S){const used=ROLES.filter(x=>x!==p.role&&SEATS[x]).map(x=>SEATS[x].col);if(!used.includes(d.c)){SEATS[p.role].col=d.c;p.col=d.c;hostSync()}return}
+ if(d.t==='pick'&&ROLES.includes(d.r)){{const cur=SEATS[d.r];if(cur&&cur.cid!==p.cid){const off=S&&!seatOn(cur);if(!off)return;const old=PLAYERS[cur.cid];if(old)old.role=null;SEATS[d.r]=null}}if(S&&p.role)return;if(p.role&&SEATS[p.role]&&SEATS[p.role].cid===p.cid)SEATS[p.role]=null;
+  p.role=d.r;p.spec=false;SEATS[d.r]={cid:p.cid,name:p.name,pid:p.pid,col:freeCol(d.r,p.col),face:p.face||null};hostSync();if(S)c.send({t:'go',role:p.role});return}
+ if(!S||!p.role)return;
+ if(d.t==='in'){IN[p.role]={mx:+d.mx||0,my:+d.my||0,sp:p.role==='S'&&!!d.sp}}
+ else if(d.t==='act')doAct(p.role);
+ else if(d.t==='chat'){doChat(p.role,String(d.x||'').slice(0,120))}}
+function hostDropped(pid){const p=Object.values(PLAYERS).find(p=>p.pid===pid);if(p&&p.role)IN[p.role]={mx:0,my:0};hostSync()}
+function freeCol(r,want){const used=ROLES.filter(x=>x!==r&&SEATS[x]).map(x=>SEATS[x].col);if(want&&PAL.includes(want)&&!used.includes(want))return want;if(!used.includes(RC0[r]))return RC0[r];return PAL.find(c=>!used.includes(c))}
+function facesPayload(){const f={};ROLES.forEach(r=>{const s=SEATS[r];if(s&&s.face)f[r]=s.face});setFaces(f);return{t:'faces',f}}
+function hostSync(){bcast(lobbyPayload());bcast(facesPayload());if(!S)hostLobbyRender();else{S.on={};ROLES.forEach(r=>{const s=SEATS[r];S.on[r]=seatOn(s);S.names[r]=s?s.name:''})}}
+function hostBeginGame(){setLevel(LVSEL);S=LVSEL===3?newState3():LVSEL===2?newState2():newState();S.pc={};ROLES.forEach(r=>{S.pc[r]=(SEATS[r]&&SEATS[r].col)||RC0[r]});ROLES.forEach(r=>{const s=SEATS[r];S.names[r]=s?s.name:'';S.on[r]=seatOn(s)});
+ bcast(lobbyPayload());Object.values(PLAYERS).forEach(p=>{const c=CONNS[p.pid];if(!p.role)p.spec=true;if(c)try{c.send({t:'go',role:p.role||null,spec:!p.role})}catch(e){}});
+ enterGame();hostLoop()}
+let HLOOP=false;function hostLoop(){if(HLOOP)return;HLOOP=true;let n=0;setInterval(()=>{tick(.05);if(++n%2===0){S.on=S.on||{};ROLES.forEach(r=>{const s=SEATS[r];S.on[r]=seatOn(s)});bcast({t:'s',s:S});updateAudio()}},50)}
+async function resumeHost(H){MODE='host';HRESUMED=true;LVSEL=H.lv||1;CODE=H.code;S=H.S;setLevel(S.lv||1);ROLES.forEach(r=>{SEATS[r]=H.SEATS[r]||null});Object.keys(H.PLAYERS||{}).forEach(k=>PLAYERS[k]=H.PLAYERS[k]);
+ if(!await loadPeer()){alert("Couldn't load the connection library (PeerJS). Check your internet and reload.");return}
+ mkHostPeer();enterGame();hostLoop()}
+
+/* ---------- client ---------- */
+async function startJoin(){const name=$('#jName').value.trim()||'Player',code=$('#jCode').value.trim().toUpperCase();if(code.length<4){$('#jMsg').textContent='Enter the game code.';return}
+ try{localStorage.setItem('mf-name',name)}catch(e){}
+ MODE='client';CODE=code;$('#jMsg').textContent='Asking for your microphone…';const mic=await getMic();
+ $('#jMsg').textContent='Connecting…';if(!await loadPeer()){$('#jMsg').textContent="Couldn't load the connection library (PeerJS).";return}
+ NAME=name;makePeer(mic)}
+let everOn=false,retryT=null,NAME='Player';
+function makePeer(mic){try{if(PEER)PEER.destroy()}catch(e){}
+ PEER=new (PeerCtor())(undefined,PEEROPT);PEER.on('call',call=>{call.answer(MIC);wireCall(call)});
+ const me=PEER;PEER.on('error',e=>{if(PEER!==me)return;if(e.type==='peer-unavailable'){if(everOn)scheduleRetry();else if(!HCONN?.open)$('#jMsg').textContent='No game with that code. Check it with the host.'}else if(everOn)scheduleRetry()});
+ PEER.on('disconnected',()=>{if(PEER===me)try{me.reconnect()}catch(e){}});PEER.on('close',()=>{if(PEER===me&&everOn)scheduleRetry()});
+ PEER.on('open',()=>connectHost(NAME,mic))}
+let lastRecv=0,lastRec=0;
+function recover(){if(MODE!=='client'||!everOn)return;lastRec=Date.now();netBanner(true);try{if(HCONN)HCONN.close()}catch(e){}HCONN=null;if(!PEER||PEER.destroyed||PEER.disconnected||!PEER.open)makePeer(MIC);else connectHost(NAME,MIC)}
+function scheduleRetry(){netBanner(true);clearTimeout(retryT);retryT=setTimeout(()=>{if(HCONN&&HCONN.open&&Date.now()-lastRecv<5000)return;recover()},1500)}
+setInterval(()=>{if(MODE!=='client'||!everOn)return;send({t:'ping'});const dead=!HCONN||!HCONN.open||(lastRecv>0&&Date.now()-lastRecv>6000);if(dead&&Date.now()-lastRec>5000)recover()},2000);
+addEventListener('online',()=>{lastRec=0});document.addEventListener('visibilitychange',()=>{if(!document.hidden)lastRec=0});
+function connectHost(name,mic){HCONN=PEER.connect(PID(CODE),{reliable:true});
+ HCONN.on('open',()=>{everOn=true;lastRecv=Date.now();netBanner(false);try{localStorage.setItem('mf-last',JSON.stringify({code:CODE,name,cid:CID}))}catch(e){}HCONN.send({t:'hello',cid:CID,name});if(!S){show('lobby');$('#lTitle').textContent='Pick your role';$('#lMic').textContent=mic?'Microphone ready. Headphones recommended.':'No microphone — you can still play using text chat.'}});
+ HCONN.on('data',clientRecv);
+ const hc=HCONN;HCONN.on('close',()=>{if(HCONN===hc||!HCONN)scheduleRetry()});
+ HCONN.on('error',()=>{})}
+function clientRecv(d){if(!d||!d.t)return;lastRecv=Date.now();netBanner(false);
+ if(d.t==='lob'){LOB=d;const me=Object.entries(d.seats).find(([r,v])=>v&&v.pid===PEER.id);const sp=(d.spec||[]).some(x=>x.pid===PEER.id);if(!S){renderRoles(d,me?me[0]:sp?'spec':null);$('#lMsg').textContent=me||sp?'Waiting for the host to start…':'Tap a role to claim it.'}syncCalls()}
+ else if(d.t==='faces'){setFaces(d.f)}
+ else if(d.t==='go'){MYROLE=d.role||null;SPEC=!!d.spec;if((MYROLE||SPEC)&&$('#game').classList.contains('on')===false&&S){enterGame()}if(MYROLE||SPEC)GO=true}
+ else if(d.t==='s'){S=d.s;setLevel(S.lv);if(GO&&(MYROLE||SPEC)&&!$('#game').classList.contains('on'))enterGame();updateAudio()}
+ else if(d.t==='chat'){if(SPEC||(MYROLE&&d.to.includes(MYROLE)))chatLine(d.f,d.x,d.to)}}
+let GO=false,LVSEL=1;
+
+/* ---------- offline ---------- */
+function startOffline(){MODE='offline';setLevel(LVSEL);S=LVSEL===3?newState3():LVSEL===2?newState2():newState();ROLES.forEach(r=>{S.names[r]='';S.on[r]=false});VIEW='quad';enterGame();
+ setInterval(()=>tick(.05),50);toast('Practice mode: in "All 4" the outlined screen is yours. Press 1-4 (or the buttons) to switch who you drive.',9000)}
+
+let gameStarted=false;
+function enterGame(){show('game');if(MODE==='host'&&HR())VIEW=HR();buildViews();$('#chat').style.display=MODE==='offline'?'none':'flex';$('#chatb').style.display=MODE!=='offline'&&PLAYING()?'block':'none';$('#micb').style.display=MODE==='client'||(MODE==='host'&&HR())?'block':'none';$('#chat').style.bottom=(isTouch&&controlledRole()?200:64)+'px';
+ if(!gameStarted){gameStarted=true;requestAnimationFrame(frame);if(PLAYING()&&MODE!=='offline')setTimeout(helpOv,300)}}
+
+/* ---------- home wiring ---------- */
+document.querySelectorAll('#lvsel button').forEach(b=>b.onclick=()=>{LVSEL=+b.dataset.l;document.querySelectorAll('#lvsel button').forEach(x=>x.classList.toggle('sel',x===b))});
+$('#bHost').onclick=startHost;
+$('#bPractice').onclick=startOffline;
+$('#bJoinShow').onclick=()=>show('join');$('#bJoinBack').onclick=()=>show('home');$('#bJoin').onclick=startJoin;
+try{$('#jName').value=localStorage.getItem('mf-name')||''}catch(e){}
+try{const L=JSON.parse(localStorage.getItem('mf-last')||'null');if(L&&L.code){const b=$('#bRejoin');b.style.display='block';b.textContent='Rejoin game '+L.code;b.onclick=()=>{CID=L.cid;try{sessionStorage.setItem('mf-cid',CID)}catch(e){}$('#jName').value=L.name||'Player';$('#jCode').value=L.code;startJoin()}}}catch(e){}
+try{const H=JSON.parse(localStorage.getItem('mf-host')||'null');if(H&&H.code&&H.S&&Date.now()-H.t<45*60*1000){const b=$('#bResume');b.style.display='block';b.textContent='Resume hosting game '+H.code;b.onclick=()=>resumeHost(H)}}catch(e){}
+const qj=new URLSearchParams(location.search).get('join');if(qj){$('#jCode').value=qj.toUpperCase();show('join')}
+window.__mf={get S(){return S},IN,doAct,tick,newState,newState2,newState3,setLevel,setS:v=>S=v,flags,canEnter,terr,action,rays};
+</script>
+</body>
+</html>
